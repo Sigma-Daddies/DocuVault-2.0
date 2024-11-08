@@ -1,0 +1,126 @@
+﻿<Page x:Class="DocuVault.DashboardPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      mc:Ignorable="d" 
+      d:DesignHeight="880" d:DesignWidth="1320" Background="White"
+      Title="DashboardPage">
+
+    <Page.Resources>
+        <!-- Define button style with a toned-down hover effect -->
+        <Style x:Key="SidebarButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#20354E"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Height" Value="115"/>
+            <Setter Property="Margin" Value="0,0.5,0,0.5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <!-- Set a toned-down color for hover effect -->
+                    <Setter Property="Background" Value="#2A3F5C"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+
+        <!-- Define two columns: one for the sidebar and one for the main content -->
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250"/>
+            <!-- Sidebar width -->
+            <ColumnDefinition Width="*"/>
+            <!-- Main content width -->
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar -->
+        <StackPanel Grid.Column="0" Background="#20354E" VerticalAlignment="Stretch">
+            <!-- Empty container space at the top -->
+            <Border Height="150" Background="#20354E" />
+
+            <Border Height="1" Background="White" Margin="0,0,0,10"/>
+
+            <!-- Buttons with images in a vertical stack -->
+            <Button x:Name="Button_Home" Style="{StaticResource SidebarButtonStyle}" Click="Button_Home_Click">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0, 0, 50, 0">
+                    <Image Source="Icons/home.png" Width="80" Height="80" Margin="5,0,5,0"/>
+                    <TextBlock Text="Home" VerticalAlignment="Center" Foreground="White" FontSize="20"/>
+                </StackPanel>
+            </Button>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="0">
+                <Line X1="0" X2="70" Stretch="Fill" Stroke="White" StrokeThickness="1" VerticalAlignment="Center"/>
+                <TextBlock Text="MANAGEMENT" Foreground="White" Margin="10,0,10,10" FontWeight="Bold"/>
+                <Line X1="0" X2="70" Stretch="Fill" Stroke="White" StrokeThickness="1" VerticalAlignment="Center"/>
+            </StackPanel>
+
+
+            <Button x:Name="Button_Manage" Style="{StaticResource SidebarButtonStyle}" Click="Button_Manage_Click">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0, 0, 40, 0">
+                    <Image Source="Icons/manage.png" Width="90" Height="80" Margin="5,0,0,0"/>
+                    <TextBlock Text="Manage" VerticalAlignment="Center" Foreground="White" FontSize="20"/>
+                </StackPanel>
+            </Button>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="0">
+                <Line X1="0" X2="93" Stretch="Fill" Stroke="White" StrokeThickness="1" VerticalAlignment="Center"/>
+                <TextBlock Text="ADMIN" Foreground="White" Margin="10,0,10,10" FontWeight="Bold"/>
+                <Line X1="0" X2="100" Stretch="Fill" Stroke="White" StrokeThickness="1" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <Button x:Name="Button_Audit" Style="{StaticResource SidebarButtonStyle}" Click="Button_Audit_Click">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0, 0, 60, 0">
+                    <Image Source="Icons/audit.png" Width="100" Height="100" Margin="5,0,0,0"/>
+                    <TextBlock Text="Audit" VerticalAlignment="Center" Foreground="White" FontSize="20"/>
+                </StackPanel>
+            </Button>
+
+            <Button x:Name="Button_Users" Style="{StaticResource SidebarButtonStyle}" Click="Button_Users_Click">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0, 0, 50, 0">
+                    <Image Source="Icons/users.png" Width="80" Height="80" Margin="0,0,5,0"/>
+                    <TextBlock Text="Users" VerticalAlignment="Center" Foreground="White" FontSize="20"/>
+                </StackPanel>
+            </Button>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="0">
+                <Line X1="0" X2="88" Stretch="Fill" Stroke="White" StrokeThickness="1" VerticalAlignment="Center"/>
+                <TextBlock Text="SECURITY" Foreground="White" Margin="10,0,10,10" FontWeight="Bold"/>
+                <Line X1="0" X2="85" Stretch="Fill" Stroke="White" StrokeThickness="1" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <Button x:Name="Button_Logout" Style="{StaticResource SidebarButtonStyle}" Click="Button_Logout_Click_1">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0, 0, 40, 0">
+                    <Image Source="Icons/logout.png" Width="70" Height="80" Margin="5,0,0,0"/>
+                    <TextBlock Text="Logout" VerticalAlignment="Center" Foreground="White" FontSize="20" />
+                </StackPanel>
+            </Button>
+        </StackPanel>
+
+        <!-- Main content frame -->
+        <Frame x:Name="Dashboard" Grid.Column="1" Background="White" Margin="10" />
+
+        <Button x:Name="AvatarButton" Width="54" Height="54" Background="Transparent" BorderBrush="Transparent" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,30,53,0" Click="AvatarButton_Click" Grid.Column="1">
+            <Button.Content>
+                <Image Source="Icons/avatar.png" Width="50" Height="50"/>
+            </Button.Content>
+            
+        </Button>
+        
+        <TextBlock HorizontalAlignment="Right" Margin="0,38,138,0" VerticalAlignment="Top" FontSize="30"
+            FontFamily="pack://application:,,,/Fonts/#Plus Jakarta Sans Bold" Grid.Column="1">
+            <Run Text="Docu" Foreground="#20354E"/><Run Text=" "/>
+            <Run Text="Vault" Foreground="#F78F27"/>
+        </TextBlock>
+
+    </Grid>
+</Page>
