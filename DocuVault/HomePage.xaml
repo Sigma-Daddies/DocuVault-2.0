@@ -1,0 +1,49 @@
+﻿<Page x:Class="DocuVault.HomePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:DocuVault"
+      mc:Ignorable="d" 
+      Background="White"
+      Title="HomePage">
+
+    <Grid>
+        <!-- Define two columns: left for text, right for image -->
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*"/>
+            <!-- Left column (TextBlock) takes more space -->
+            <ColumnDefinition Width="1*"/>
+            <!-- Right column (Image) takes less space -->
+        </Grid.ColumnDefinitions>
+
+        <!-- TextBlock for Welcome Message -->
+        <TextBlock Text="Welcome to our Document Management System— a
+secure, efficient way to manage your documents effortlessly. 
+Users can upload, access, and download their files, with support 
+for PDF, DOC, PPT, CSV, and XLS formats. Equipped with robust 
+user management features and an activity audit trail, our system 
+ensures both safety and ease of use. Be part of our expanding 
+community—currently with ?? users and growing!" 
+HorizontalAlignment="Stretch" 
+VerticalAlignment="Center" 
+TextWrapping="Wrap"
+FontFamily="pack://application:,,,/Fonts/#Plus Jakarta Sans SemiBold"
+FontSize="16"
+Margin="100,0,50,0"
+MinWidth="300"
+Grid.Column="0"/>
+
+        <!-- Image with responsive width/height -->
+        <Image Source="Icons/us.png" 
+               HorizontalAlignment="Stretch" 
+               VerticalAlignment="Center" 
+               MaxHeight="514" 
+               MaxWidth="614" 
+               Stretch="Uniform" 
+               Margin="0,20,50,0" 
+               Width="Auto" 
+               Grid.Column="1"/>
+
+    </Grid>
+</Page>
