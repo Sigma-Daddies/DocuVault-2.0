@@ -1,28 +1,52 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace DocuVault
 {
-    /// <summary>
-    /// Interaction logic for ManagePage.xaml
-    /// </summary>
     public partial class ManagePage : Page
     {
-        public ManagePage()
+        private List<File> fileList = new List<File>(); // List of files
+        private AppUser currentUser; // Current logged-in user
+
+        // Constructor to initialize the page with the current user
+        public ManagePage(AppUser user)
         {
             InitializeComponent();
+            currentUser = user;
+
+            // No need to check for admin status, assuming the UI stays the same for all users
+
+            // Load files for the user
+            LoadFileList();
         }
+
+        // Load a list of files associated with the current user (this can be from a database or other sources)
+        private void LoadFileList()
+        {
+            // Example: Adding files to the list with an index
+            fileList.Add(new File { Index = 1, FileName = "Document1.pdf", UploadDate = DateTime.Now });
+            fileList.Add(new File { Index = 2, FileName = "Image2.png", UploadDate = DateTime.Now.AddMinutes(-30) });
+            fileList.Add(new File { Index = 3, FileName = "Report3.docx", UploadDate = DateTime.Now.AddHours(-2) });
+
+            // Set the data source of the ListView
+            FileListView.ItemsSource = fileList;
+        }
+
+        // Event handler for uploading a file
+        private void UploadFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Handle file upload logic here (e.g., open a file dialog and upload selected files)
+            MessageBox.Show("File upload functionality is yet to be implemented.");
+        }
+    }
+
+    // File class to represent files in the list
+    public class File
+    {
+        public int Index { get; set; }  // Index for numbering the files
+        public string FileName { get; set; }
+        public DateTime UploadDate { get; set; }
     }
 }
