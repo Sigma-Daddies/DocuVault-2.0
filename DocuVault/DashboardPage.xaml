@@ -64,7 +64,6 @@
                 <Line X1="0" X2="70" Stretch="Fill" Stroke="White" StrokeThickness="1" VerticalAlignment="Center"/>
             </StackPanel>
 
-
             <Button x:Name="Button_Manage" Style="{StaticResource SidebarButtonStyle}" Click="Button_Manage_Click">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0, 0, 40, 0">
                     <Image Source="Icons/manage.png" Width="90" Height="80" Margin="5,0,0,0"/>
@@ -113,9 +112,8 @@
             <Button.Content>
                 <Image Source="Icons/avatar.png" Width="50" Height="50"/>
             </Button.Content>
-            
         </Button>
-        
+
         <TextBlock HorizontalAlignment="Right" Margin="0,38,138,0" VerticalAlignment="Top" FontSize="30"
             FontFamily="pack://application:,,,/Fonts/#Plus Jakarta Sans Bold" Grid.Column="1">
             <Run Text="Docu" Foreground="#20354E"/><Run Text=" "/>
