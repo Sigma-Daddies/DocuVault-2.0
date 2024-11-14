@@ -5,10 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DocuVault"
         mc:Ignorable="d"
-        Title="MainWindow" Height="880" Width="1320" >
-
+        Title="DocuVault" Height="880" Width="1320">
 
     <Grid>
-        <Frame Name="MainFrame" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" NavigationUIVisibility="Hidden"/>
+        <!-- Frame for page navigation -->
+        <Frame Name="MainFrame" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,0,0" NavigationUIVisibility="Hidden" />
     </Grid>
 </Window>
