@@ -1,25 +1,23 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Data.OleDb;
+using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace DocuVault
 {
-    /// <summary>
-    /// Interaction logic for LoginPage.xaml
-    /// </summary>
     public partial class LoginPage : Page
     {
+        // Connection string for MS Access database
+        private string connectionString = @"Provider=Microsoft.ACE.OLEDB.12.0;Data Source=C:\Users\punza\Desktop\c\DocuVault.accdb";
+
+        private bool isPasswordVisible = false;
+        private string _password; // Store the password here
+        private bool _isSyncingPassword = false; // Flag to prevent recursive updates
+
         public LoginPage()
         {
             InitializeComponent();
@@ -27,43 +25,107 @@ namespace DocuVault
 
         private void Btn_SignIn_Click(object sender, RoutedEventArgs e)
         {
-            // Example authentication (you should replace this with actual authentication logic)
             string email = TextBox_Email.Text;
-            string password = TextBox_Password.Text; // Assuming this is a PasswordBox
+            string password = _password; // Use the stored password from the PasswordBox
 
-            //if (IsAuthenticated(email, password))
-            //{
-            // On successful login, navigate to the DashboardPage
-                this.NavigationService.Navigate(new DashboardPage());
-            //}
-            //else
-            //{
-            //    // Show an error message if authentication fails
-            //    MessageBox.Show("Invalid login credentials");
-            //}
+            // Authenticate the user
+            if (IsAuthenticated(email, password))
+            {
+                // Retrieve user details (e.g., from the database)
+                AppUser user = GetUserFromDatabase(email);
+
+                // On successful login, navigate to the DashboardPage, passing the user object
+                this.NavigationService.Navigate(new DashboardPage(user));
+            }
+            else
+            {
+                // Show an error message if authentication fails
+                MessageBox.Show("Invalid login credentials");
+            }
         }
 
         private bool IsAuthenticated(string email, string password)
         {
-            // Replace with actual authentication logic
-            return email == "user@example.com" && password == "password123";
+            using (OleDbConnection connection = new OleDbConnection(connectionString))
+            {
+                try
+                {
+                    connection.Open();
+
+                    // Hash the entered password
+                    string hashedPassword = HashPassword(password);
+
+                    string query = "SELECT COUNT(*) FROM Users WHERE Email = @Email AND Password = @Password";
+                    using (OleDbCommand command = new OleDbCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@Email", email);
+                        command.Parameters.AddWithValue("@Password", hashedPassword); // Use the hashed password for comparison
+
+                        int result = (int)command.ExecuteScalar();
+                        return result > 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error: " + ex.Message);
+                    return false;
+                }
+            }
+        }
+
+        private string HashPassword(string password)
+        {
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+                return Convert.ToBase64String(hashBytes); // Return the hashed password as a Base64 string
+            }
+        }
+
+        private AppUser GetUserFromDatabase(string email)
+        {
+            using (OleDbConnection connection = new OleDbConnection(connectionString))
+            {
+                try
+                {
+                    connection.Open();
+
+                    string query = "SELECT Email, IsAdmin FROM Users WHERE Email = @Email";
+                    using (OleDbCommand command = new OleDbCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@Email", email);
+
+                        using (OleDbDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                bool isAdmin = reader.GetBoolean(reader.GetOrdinal("IsAdmin"));
+                                return new AppUser(email, isAdmin);
+                            }
+                            else
+                            {
+                                return null; // User not found
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error retrieving user: " + ex.Message);
+                    return null;
+                }
+            }
         }
 
         private void TextBox_Email_TextChanged(object sender, TextChangedEventArgs e)
         {
-
+            // Handle email text changes if needed
         }
 
         private void TextBox_Password_TextChanged(object sender, TextChangedEventArgs e)
         {
-
+            // Handle password text changes if needed
         }
-
-
-        private bool isPasswordVisible = false;
-        private string _password; // Store the password here
-        private bool _isSyncingPassword = false; // Flag to prevent recursive updates
-
 
         private void TogglePasswordVisibility(object sender, RoutedEventArgs e)
         {
@@ -109,21 +171,15 @@ namespace DocuVault
             }
         }
 
-
-
-
-
-
-
         private void ForgotPassword_Click(object sender, MouseButtonEventArgs e)
         {
-            // Handle the click event
+            // Navigate to ForgotPasswordPage
             this.NavigationService.Navigate(new ForgotPasswordPage());
         }
 
         private void Label_Click(object sender, MouseButtonEventArgs e)
         {
-            // Handle the click event
+            // Navigate to RegisterPage
             this.NavigationService.Navigate(new RegisterPage());
         }
     }
