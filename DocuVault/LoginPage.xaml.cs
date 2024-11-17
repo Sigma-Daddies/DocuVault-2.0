@@ -32,7 +32,7 @@ namespace DocuVault
             if (IsAuthenticated(email, password))
             {
                 // Retrieve user details (e.g., from the database)
-                AppUser user = GetUserFromDatabase(email);
+                UserService user = GetUserFromDatabase(email);
 
                 // On successful login, navigate to the DashboardPage, passing the user object
                 this.NavigationService.Navigate(new DashboardPage(user));
@@ -82,7 +82,7 @@ namespace DocuVault
             }
         }
 
-        private AppUser GetUserFromDatabase(string email)
+        private UserService GetUserFromDatabase(string email)
         {
             using (OleDbConnection connection = new OleDbConnection(connectionString))
             {
@@ -100,7 +100,7 @@ namespace DocuVault
                             if (reader.Read())
                             {
                                 bool isAdmin = reader.GetBoolean(reader.GetOrdinal("IsAdmin"));
-                                return new AppUser(email, isAdmin);
+                                return new UserService(email, isAdmin);
                             }
                             else
                             {

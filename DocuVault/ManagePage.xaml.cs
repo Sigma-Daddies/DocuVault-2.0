@@ -8,10 +8,10 @@ namespace DocuVault
     public partial class ManagePage : Page
     {
         private List<File> fileList = new List<File>(); // List of files
-        private AppUser currentUser; // Current logged-in user
+        private UserService currentUser; // Current logged-in user
 
         // Constructor to initialize the page with the current user
-        public ManagePage(AppUser user)
+        public ManagePage(UserService user)
         {
             InitializeComponent();
             currentUser = user;
