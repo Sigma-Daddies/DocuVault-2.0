@@ -4,7 +4,7 @@ namespace DocuVault
 {
     public partial class MainWindow : Window
     {
-        private AppUser _currentUser;
+        private UserService _currentUser;
 
         public MainWindow()
         {
@@ -50,7 +50,7 @@ namespace DocuVault
         }
 
         // These methods are already in place in your current code
-        public void NavigateToHomePage(AppUser currentUser)
+        public void NavigateToHomePage(UserService currentUser)
         {
             _currentUser = currentUser; // Store the current user information
             HomePage homePage = new HomePage();

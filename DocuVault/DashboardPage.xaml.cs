@@ -6,9 +6,9 @@ namespace DocuVault
 {
     public partial class DashboardPage : Page
     {
-        private AppUser currentUser;
+        private UserService currentUser;
 
-        public DashboardPage(AppUser user)
+        public DashboardPage(UserService user)
         {
             InitializeComponent();
             currentUser = user;
