@@ -2,13 +2,13 @@
 
 namespace DocuVault
 {
-    public class AppUser
+    public class UserService
     {
         public string Email { get; set; }  // Email of the client
         public bool IsAdministrator { get; set; }  // Whether the client is an admin or not
 
         // Constructor to initialize client properties
-        public AppUser(string email, bool isAdministrator)
+        public UserService(string email, bool isAdministrator)
         {
             // Ensure the email is not null or empty
             if (string.IsNullOrWhiteSpace(email))
@@ -21,7 +21,7 @@ namespace DocuVault
         }
 
         // Parameterless constructor for deserialization or default initialization
-        public AppUser() { }
+        public UserService() { }
 
         // Optional: Override the ToString() method to return a custom string for the client
         public override string ToString()
@@ -32,7 +32,7 @@ namespace DocuVault
         // Method to compare two AppUser objects for equality based on their Email and IsAdministrator status
         public override bool Equals(object obj)
         {
-            if (obj is AppUser otherUser)
+            if (obj is UserService otherUser)
             {
                 return this.Email == otherUser.Email && this.IsAdministrator == otherUser.IsAdministrator;
             }
