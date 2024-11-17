@@ -78,7 +78,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="AppUser.cs" />
+    <Compile Include="Data\AccessDB.cs" />
+    <Compile Include="Services\UserService.cs" />
     <Compile Include="AuditPage.xaml.cs">
       <DependentUpon>AuditPage.xaml</DependentUpon>
     </Compile>
@@ -205,8 +206,6 @@
     <Resource Include="Icons\us.png" />
     <Resource Include="Icons\users.png" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Pages\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
