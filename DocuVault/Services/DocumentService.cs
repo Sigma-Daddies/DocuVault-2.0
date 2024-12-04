@@ -109,9 +109,6 @@ namespace DocumentManagementSystem.Services
             }
         }
 
-
-<<<<<<< Updated upstream
-=======
         // Method to download a document
         public void DownloadDocument(int userId, Document document, string destinationPath)
         {
@@ -139,6 +136,7 @@ namespace DocumentManagementSystem.Services
                 throw;
             }
         }
+
 
         // Method to delete a document
         public void DeleteDocument(int userId, int documentId)
@@ -199,7 +197,9 @@ namespace DocumentManagementSystem.Services
                 Console.WriteLine("An error occurred during document deletion: " + ex.Message);
             }
         }
->>>>>>> Stashed changes
+
+      
+      
 
     }
 }
