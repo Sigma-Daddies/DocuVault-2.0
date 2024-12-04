@@ -1,52 +1,58 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Windows;
+using Microsoft.Win32;
 using System.Windows.Controls;
+using System.Collections.Generic;
+using DocumentManagementSystem.Services;
+using DocuVault.Models;
 
 namespace DocuVault
 {
     public partial class ManagePage : Page
     {
-        private List<File> fileList = new List<File>(); // List of files
-        private UserService currentUser; // Current logged-in user
+        private int _userId;
+        private string _email;
+        private bool _isAdmin;
+        private DocumentService _documentService;
 
-        // Constructor to initialize the page with the current user
-        public ManagePage(UserService user)
+        public ManagePage(int userId, string email, bool isAdmin)
         {
             InitializeComponent();
-            currentUser = user;
-
-            // No need to check for admin status, assuming the UI stays the same for all users
-
-            // Load files for the user
-            LoadFileList();
+            _userId = userId;
+            _email = email;
+            _isAdmin = isAdmin;
+            _documentService = new DocumentService(); // Initialize DocumentService
+            LoadDocuments(); // Load documents on page load
         }
 
-        // Load a list of files associated with the current user (this can be from a database or other sources)
-        private void LoadFileList()
+        // Upload document button click event
+        private void UploadButton_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            // Example: Adding files to the list with an index
-            fileList.Add(new File { Index = 1, FileName = "Document1.pdf", UploadDate = DateTime.Now });
-            fileList.Add(new File { Index = 2, FileName = "Image2.png", UploadDate = DateTime.Now.AddMinutes(-30) });
-            fileList.Add(new File { Index = 3, FileName = "Report3.docx", UploadDate = DateTime.Now.AddHours(-2) });
+            // Open file dialog to select a file
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "All Files (*.*)|*.*"; // Filter for any type of file
+            if (openFileDialog.ShowDialog() == true)
+            {
+                string selectedFilePath = openFileDialog.FileName;
+                string fileName = Path.GetFileName(selectedFilePath);
 
-            // Set the data source of the ListView
-            FileListView.ItemsSource = fileList;
+                try
+                {
+                    // Call the UploadDocument method from DocumentService
+                    _documentService.UploadDocument(_userId, fileName, selectedFilePath);
+                    MessageBox.Show("Document uploaded successfully.");
+
+                    // Reload the document list and update the DataGrid
+                    LoadDocuments(); // This will update the DataGrid with the newly uploaded document
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("An error occurred while uploading the document: " + ex.Message);
+                }
+            }
         }
 
-        // Event handler for uploading a file
-        private void UploadFileButton_Click(object sender, RoutedEventArgs e)
-        {
-            // Handle file upload logic here (e.g., open a file dialog and upload selected files)
-            MessageBox.Show("File upload functionality is yet to be implemented.");
-        }
-    }
 
-    // File class to represent files in the list
-    public class File
-    {
-        public int Index { get; set; }  // Index for numbering the files
-        public string FileName { get; set; }
-        public DateTime UploadDate { get; set; }
     }
 }
