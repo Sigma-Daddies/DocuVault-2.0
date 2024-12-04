@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Data.OleDb;
-using System.Security.Cryptography;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -11,7 +8,7 @@ namespace DocuVault
 {
     public partial class LoginPage : Page
     {
-        private readonly UserService _usersService;
+        private readonly UserService _userService;
         private bool isPasswordVisible = false;
         private string _password; // Store the password here
         private bool _isSyncingPassword = false; // Flag to prevent recursive updates
@@ -20,7 +17,7 @@ namespace DocuVault
         {
             InitializeComponent();
             var accessDB = new AccessDB(); // Initialize AccessDB
-            _usersService = new UserService(accessDB); // Initialize UsersService
+            _userService = new UserService(accessDB); // Initialize UserService
         }
 
         private void Btn_SignIn_Click(object sender, RoutedEventArgs e)
@@ -28,17 +25,22 @@ namespace DocuVault
             string email = TextBox_Email.Text;
             string password = _password;
 
-            // Authenticate the user
-            if (_usersService.IsAuthenticated(email, password))
+            // Attempt to log in the user
+            if (_userService.Login(email, password))
             {
-                UserService user = _usersService.GetUserFromDatabase(email);
-                this.NavigationService.Navigate(new DashboardPage(user));
+                // Navigate to DashboardPage and pass logged-in user details
+                int userId = _userService.GetLoggedInUserId();
+                string userEmail = _userService.GetLoggedInUserEmail();
+                bool isAdmin = _userService.GetIsAdministrator();
+
+                this.NavigationService.Navigate(new DashboardPage(userId, userEmail, isAdmin));
             }
             else
             {
-                MessageBox.Show("Invalid login credentials");
+                MessageBox.Show("Invalid login credentials", "Login Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
 
         private void TextBox_Email_TextChanged(object sender, TextChangedEventArgs e)
         {
