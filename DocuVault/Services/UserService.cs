@@ -9,53 +9,30 @@ namespace DocuVault
     public class UserService
     {
         private readonly AccessDB _accessDB;
-        public string Email { get; set; }  // Email of the client
-        public bool IsAdministrator { get; set; }  // Whether the client is an admin or not
+
+        // Properties to store the currently logged-in user's details
+        public int UserId { get; private set; }
+        public string Email { get; private set; }
+        public bool IsAdministrator { get; private set; }
 
         public UserService(AccessDB accessDB)
         {
             _accessDB = accessDB ?? throw new ArgumentNullException(nameof(accessDB));
         }
 
-        // Constructor to initialize client properties
-        public UserService(string email, bool isAdministrator)
+        // Method to authenticate the user
+        public bool Login(string email, string password)
         {
-            // Ensure the email is not null or empty
-            if (string.IsNullOrWhiteSpace(email))
+            if (IsAuthenticated(email, password))
             {
-                throw new ArgumentException("Email cannot be null or empty", nameof(email));
-            }
-
-            Email = email;
-            IsAdministrator = isAdministrator;
-        }
-
-        // Parameterless constructor for deserialization or default initialization
-        public UserService() { }
-
-        // Optional: Override the ToString() method to return a custom string for the client
-        public override string ToString()
-        {
-            return $"Email: {Email}, Admin: {IsAdministrator}";
-        }
-
-        // Method to compare two AppUser objects for equality based on their Email and IsAdministrator status
-        public override bool Equals(object obj)
-        {
-            if (obj is UserService otherUser)
-            {
-                return this.Email == otherUser.Email && this.IsAdministrator == otherUser.IsAdministrator;
+                GetLoggedInUserDetails(email); // Fetch and populate user details
+                return true;
             }
             return false;
         }
 
-        // Override GetHashCode to ensure proper hash calculation if Equals() is overridden
-        public override int GetHashCode()
-        {
-            return Email.GetHashCode() ^ IsAdministrator.GetHashCode();
-        }
-
-        public bool IsAuthenticated(string email, string password)
+        // Authenticate user credentials
+        private bool IsAuthenticated(string email, string password)
         {
             return _accessDB.Execute(connection =>
             {
@@ -69,11 +46,13 @@ namespace DocuVault
                 }
             });
         }
-        public UserService GetUserFromDatabase(string email)
+
+        // Fetch the currently logged-in user's details from the database
+        private void GetLoggedInUserDetails(string email)
         {
-            return _accessDB.Execute(connection =>
+            _accessDB.Execute(connection =>
             {
-                string query = "SELECT Email, IsAdmin FROM Users WHERE Email = @Email";
+                string query = "SELECT UserId, Email, IsAdmin FROM Users WHERE Email = @Email";
                 using (OleDbCommand command = new OleDbCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@Email", email);
@@ -81,24 +60,47 @@ namespace DocuVault
                     {
                         if (reader.Read())
                         {
-                            bool isAdmin = reader.GetBoolean(reader.GetOrdinal("IsAdmin"));
-                            return new UserService(email, isAdmin);
+                            UserId = reader.GetInt32(reader.GetOrdinal("UserId"));
+                            Email = reader.GetString(reader.GetOrdinal("Email"));
+                            IsAdministrator = reader.GetBoolean(reader.GetOrdinal("IsAdmin"));
                         }
-                        return null;
+                        else
+                        {
+                            throw new Exception("User not found.");
+                        }
                     }
                 }
             });
         }
+
+        // Expose the logged-in user's ID for use in other services
+        public int GetLoggedInUserId()
+        {
+            if (UserId == 0)
+                throw new InvalidOperationException("No user is currently logged in.");
+            return UserId;
+        }
+
+        // Expose the logged-in user's email for use in other services
+        public string GetLoggedInUserEmail()
+        {
+            if (string.IsNullOrEmpty(Email))
+                throw new InvalidOperationException("No user is currently logged in.");
+            return Email;
+        }
+
+        // Expose whether the logged-in user is an administrator
+        public bool GetIsAdministrator()
+        {
+            return IsAdministrator;
+        }
+
+        // Method to register a new user
         public async Task<bool> RegisterUserAsync(string email, string password, string confirmPassword)
         {
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password) || string.IsNullOrEmpty(confirmPassword))
-            {
-                throw new ArgumentException("All fields are required.");
-            }
             if (password != confirmPassword)
-            {
                 throw new ArgumentException("Passwords do not match.");
-            }
+
             string hashedPassword = HashPassword(password);
             return await Task.Run(() =>
             {
@@ -111,11 +113,10 @@ namespace DocuVault
                         checkEmailCommand.Parameters.Add("?", OleDbType.VarWChar).Value = email;
                         int emailExists = (int)checkEmailCommand.ExecuteScalar();
                         if (emailExists > 0)
-                        {
                             throw new Exception("This email is already registered.");
-                        }
                     }
-                    // Insert new user data into the Users table
+
+                    // Insert new user into database
                     string insertQuery = "INSERT INTO Users (Email, [Password], IsAdmin) VALUES (?, ?, ?)";
                     using (var insertCommand = new OleDbCommand(insertQuery, connection))
                     {
@@ -128,6 +129,8 @@ namespace DocuVault
                 });
             });
         }
+
+        // Utility method to hash a password
         private string HashPassword(string password)
         {
             using (SHA256 sha256 = SHA256.Create())
