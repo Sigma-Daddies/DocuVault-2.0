@@ -54,5 +54,57 @@ namespace DocuVault
         }
 
 
+<<<<<<< Updated upstream
+=======
+                try
+                {
+                    // Call the DeleteDocument method from DocumentService
+                    _documentService.DeleteDocument(_userId, selectedDocument.DocumentId);
+                    MessageBox.Show("Document deleted successfully.");
+                    LoadDocuments(); // Reload the document list
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("An error occurred while deleting the document: " + ex.Message);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select a document to delete.");
+            }
+        }
+
+        // Download document button click event
+        private void DownloadButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            if (Documents_DataGrid.SelectedItem != null)
+            {
+                Document selectedDocument = (Document)Documents_DataGrid.SelectedItem;
+
+                // Ask the user to choose a download location
+                SaveFileDialog saveFileDialog = new SaveFileDialog();
+                saveFileDialog.FileName = selectedDocument.DocumentName; // Default filename
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    string destinationPath = saveFileDialog.FileName;
+
+                    try
+                    {
+                        // Call the DownloadDocument method from DocumentService
+                        _documentService.DownloadDocument(_userId, selectedDocument, Path.GetDirectoryName(destinationPath));
+                        MessageBox.Show("Document downloaded successfully.");
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("An error occurred while downloading the document: " + ex.Message);
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select a document to download.");
+            }
+        }
+>>>>>>> Stashed changes
     }
 }
