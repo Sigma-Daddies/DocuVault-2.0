@@ -109,5 +109,19 @@ namespace DocuVault
             }
         }
 
+        // Reload the list of documents (this method is called after upload/delete)
+        private void LoadDocuments()
+        {
+            List<Document> documents = _documentService.GetDocumentsByUser(_userId);
+            Documents_DataGrid.ItemsSource = documents; // Set the ItemsSource of the DataGrid
+            Documents_DataGrid.Items.Refresh(); // Refresh DataGrid after loading
+        }
+
+        // SelectionChanged event handler for the DataGrid
+        private void Documents_DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Handle the event when a document is selected in the DataGrid (optional)
+        }
+
     }
 }
