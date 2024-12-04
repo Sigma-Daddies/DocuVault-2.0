@@ -6,16 +6,21 @@ namespace DocuVault
 {
     public partial class DashboardPage : Page
     {
-        private UserService currentUser;
+        private int _userId;
+        private string _email;
+        private bool _isAdmin;
 
-        public DashboardPage(UserService user)
+        public DashboardPage(int userId, string email, bool isAdmin)
         {
             InitializeComponent();
-            currentUser = user;
+            _userId = userId;
+            _email = email;
+            _isAdmin = isAdmin;
+
             Dashboard.Content = new HomePage();  // Set default content to HomePage
 
             // Show or hide buttons based on user role
-            if (currentUser.IsAdministrator)
+            if (_isAdmin)
             {
                 // Show the admin-related buttons (Audit and User Management)
                 Button_Audit.Visibility = Visibility.Visible;
@@ -43,8 +48,8 @@ namespace DocuVault
 
         private void Button_Manage_Click(object sender, RoutedEventArgs e)
         {
-            // Pass the currentUser object to ManagePage
-            Dashboard.Navigate(new ManagePage(currentUser));
+            // Pass user details to ManagePage
+            Dashboard.Navigate(new ManagePage(_userId, _email, _isAdmin));
         }
 
         private void Button_Audit_Click(object sender, RoutedEventArgs e)
