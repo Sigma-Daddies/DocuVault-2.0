@@ -53,6 +53,29 @@ namespace DocuVault
             }
         }
 
+        // Delete document button click event
+        private void DeleteButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            if (Documents_DataGrid.SelectedItem != null)
+            {
+                Document selectedDocument = (Document)Documents_DataGrid.SelectedItem;
 
+                try
+                {
+                    // Call the DeleteDocument method from DocumentService
+                    _documentService.DeleteDocument(_userId, selectedDocument.DocumentId);
+                    MessageBox.Show("Document deleted successfully.");
+                    LoadDocuments(); // Reload the document list
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("An error occurred while deleting the document: " + ex.Message);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select a document to delete.");
+            }
+        }
     }
 }
