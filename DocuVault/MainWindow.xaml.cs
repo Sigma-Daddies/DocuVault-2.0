@@ -61,7 +61,8 @@ namespace DocuVault
         {
             if (_currentUser != null)
             {
-                ManagePage managePage = new ManagePage(_currentUser);
+                // Pass individual user details to ManagePage constructor
+                ManagePage managePage = new ManagePage(_currentUser.GetLoggedInUserId(), _currentUser.GetLoggedInUserEmail(), _currentUser.GetIsAdministrator());
                 MainFrame.Navigate(managePage);
             }
             else
@@ -70,6 +71,7 @@ namespace DocuVault
                 NavigateToLoginPage();
             }
         }
+
 
         public void NavigateToAuditTrailPage()
         {
