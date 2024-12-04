@@ -198,8 +198,20 @@ namespace DocumentManagementSystem.Services
             }
         }
 
-      
-      
+        // Reload the documents and update the DataGrid
+        public void LoadDocuments(int userId, DataGrid documentsDataGrid)
+        {
+            if (userId != 0)
+            {
+                List<Document> documents = GetDocumentsByUser(userId);
+                documentsDataGrid.Items.Clear(); // Clear existing items
+
+                // Set the data source for the DataGrid
+                documentsDataGrid.ItemsSource = documents;
+                documentsDataGrid.Items.Refresh(); // Ensure DataGrid is refreshed
+            }
+        }
+
 
     }
 }
