@@ -53,9 +53,12 @@ namespace DocuVault
             }
         }
 
-
-<<<<<<< Updated upstream
-=======
+        // Delete document button click event
+        private void DeleteButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            if (Documents_DataGrid.SelectedItem != null)
+            {
+                Document selectedDocument = (Document)Documents_DataGrid.SelectedItem;
                 try
                 {
                     // Call the DeleteDocument method from DocumentService
@@ -105,6 +108,6 @@ namespace DocuVault
                 MessageBox.Show("Please select a document to download.");
             }
         }
->>>>>>> Stashed changes
+
     }
 }
