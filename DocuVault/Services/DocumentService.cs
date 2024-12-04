@@ -109,7 +109,6 @@ namespace DocumentManagementSystem.Services
             }
         }
 
-
         // Method to download a document
         public void DownloadDocument(int userId, Document document, string destinationPath)
         {
@@ -139,6 +138,68 @@ namespace DocumentManagementSystem.Services
         }
 
 
+        // Method to delete a document
+        public void DeleteDocument(int userId, int documentId)
+        {
+            string filePath = string.Empty;
+            string documentName = string.Empty;
+
+            try
+            {
+                // Retrieve document details (document name and file path) from the database
+                _accessDB.Execute(connection =>
+                {
+                    string query = "SELECT DocumentName, FilePath FROM Document WHERE DocumentId = @DocumentId";
+                    using (OleDbCommand cmd = new OleDbCommand(query, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@DocumentId", documentId);
+
+                        using (OleDbDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                documentName = reader["DocumentName"].ToString();
+                                filePath = reader["FilePath"].ToString();
+                            }
+                            else
+                            {
+                                Console.WriteLine("Document not found.");
+                                return;
+                            }
+                        }
+                    }
+                });
+
+                // Delete the file from storage
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                    Console.WriteLine("File deleted successfully.");
+                }
+                else
+                {
+                    Console.WriteLine($"File not found at {filePath}.");
+                }
+
+                // Delete the record from the database
+                _accessDB.Execute(connection =>
+                {
+                    string query = "DELETE FROM Document WHERE DocumentId = @DocumentId";
+                    using (OleDbCommand cmd = new OleDbCommand(query, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@DocumentId", documentId);
+                        cmd.ExecuteNonQuery();
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred during document deletion: " + ex.Message);
+            }
+        }
+
+      
+      
 
     }
 }
