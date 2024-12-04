@@ -110,6 +110,35 @@ namespace DocumentManagementSystem.Services
         }
 
 
+        // Method to download a document
+        public void DownloadDocument(int userId, Document document, string destinationPath)
+        {
+            try
+            {
+                if (File.Exists(document.FilePath))
+                {
+                    string destinationFilePath = Path.Combine(destinationPath, document.DocumentName);
+
+                    if (!Directory.Exists(destinationPath))
+                    {
+                        Directory.CreateDirectory(destinationPath);
+                    }
+
+                    File.Copy(document.FilePath, destinationFilePath, overwrite: true);
+                }
+                else
+                {
+                    throw new FileNotFoundException($"Document not found at {document.FilePath}.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred during document download: " + ex.Message);
+                throw;
+            }
+        }
+
+
 
     }
 }
