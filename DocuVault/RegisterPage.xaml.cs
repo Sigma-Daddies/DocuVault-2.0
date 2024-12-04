@@ -2,21 +2,17 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-using System.Data.OleDb;
 
 namespace DocuVault
 {
     public partial class RegisterPage : Page
     {
-        private readonly AccessDB _accessDB;
+        private readonly UserService _userService;
 
         public RegisterPage()
         {
             InitializeComponent();
-            _accessDB = new AccessDB(); // Initialize AccessDB instance
+            _userService = new UserService(new AccessDB()); // Initialize AccessDB instance
         }
 
         private void TextBox_Email_TextChanged(object sender, TextChangedEventArgs e)
@@ -30,71 +26,23 @@ namespace DocuVault
             string password = PasswordBox_Password.Password;
             string confirmPassword = PasswordBox_Password_Confirm.Password;
 
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password) || string.IsNullOrEmpty(confirmPassword))
-            {
-                MessageBox.Show("All fields are required.");
-                return;
-            }
-
-            if (password != confirmPassword)
-            {
-                MessageBox.Show("Passwords do not match.");
-                return;
-            }
-
-            string hashedPassword = HashPassword(password);
-
             try
             {
-                await Task.Run(() =>
+                bool isRegistered = await _userService.RegisterUserAsync(email, password, confirmPassword);
+
+                if (isRegistered)
                 {
-                    _accessDB.Execute(connection =>
-                    {
-                        // Check if email already exists
-                        string checkEmailQuery = "SELECT COUNT(*) FROM Users WHERE Email = ?";
-                        using (var checkEmailCommand = new OleDbCommand(checkEmailQuery, connection))
-                        {
-                            checkEmailCommand.Parameters.Add("?", OleDbType.VarWChar).Value = email;
-                            int emailExists = (int)checkEmailCommand.ExecuteScalar();
-
-                            if (emailExists > 0)
-                            {
-                                throw new Exception("This email is already registered.");
-                            }
-                        }
-
-                        // Insert new user data into the Users table
-                        string insertQuery = "INSERT INTO Users (Email, [Password], IsAdmin) VALUES (?, ?, ?)";
-                        using (var insertCommand = new OleDbCommand(insertQuery, connection))
-                        {
-                            insertCommand.Parameters.Add("?", OleDbType.VarWChar).Value = email;
-                            insertCommand.Parameters.Add("?", OleDbType.VarWChar).Value = hashedPassword;
-                            insertCommand.Parameters.Add("?", OleDbType.Boolean).Value = false;
-
-                            int rowsAffected = insertCommand.ExecuteNonQuery();
-                            if (rowsAffected <= 0)
-                            {
-                                throw new Exception("Registration failed. Please try again.");
-                            }
-                        }
-                    });
-                });
-
-                MessageBox.Show("Registration successful!");
-                this.NavigationService.Navigate(new LoginPage());
+                    MessageBox.Show("Registration successful!");
+                    this.NavigationService.Navigate(new LoginPage());
+                }
+                else
+                {
+                    MessageBox.Show("Registration failed. Please try again.");
+                }
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
-            }
-        }
-
-        private string HashPassword(string password)
-        {
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                return Convert.ToBase64String(hashBytes);
             }
         }
 
