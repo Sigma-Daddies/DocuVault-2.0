@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using DocuVault.Data;
 
 namespace DocuVault
 {
@@ -20,27 +21,40 @@ namespace DocuVault
             _userService = new UserService(accessDB); // Initialize UserService
         }
 
-        private void Btn_SignIn_Click(object sender, RoutedEventArgs e)
+        private async void Btn_SignIn_Click(object sender, RoutedEventArgs e)
         {
             string email = TextBox_Email.Text;
             string password = _password;
 
-            // Attempt to log in the user
-            if (_userService.Login(email, password))
+            try
             {
-                // Navigate to DashboardPage and pass logged-in user details
-                int userId = _userService.GetLoggedInUserId();
-                string userEmail = _userService.GetLoggedInUserEmail();
-                bool isAdmin = _userService.GetIsAdministrator();
+                // Use LoginAsync instead of Login
+                bool isLoggedIn = await _userService.LoginAsync(email, password); // Update to LoginAsync
+                if (isLoggedIn)
+                {
+                    // Navigate to DashboardPage and pass logged-in user details
+                    int userId = _userService.UserID;
+                    string userEmail = _userService.Email;
+                    bool isAdmin = _userService.IsAdministrator;
 
-                this.NavigationService.Navigate(new DashboardPage(userId, userEmail, isAdmin));
+                    this.NavigationService.Navigate(new DashboardPage(userId, userEmail, isAdmin));
+                }
+                else
+                {
+                    MessageBox.Show("Invalid login credentials", "Login Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
-            else
+            catch (UnauthorizedAccessException ex)
             {
-                MessageBox.Show("Invalid login credentials", "Login Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                // Show message when account is locked
+                MessageBox.Show(ex.Message, "Login Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            catch (Exception ex)
+            {
+                // Handle any other unexpected errors
+                MessageBox.Show("An unexpected error occurred: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
 
         private void TextBox_Email_TextChanged(object sender, TextChangedEventArgs e)
         {
