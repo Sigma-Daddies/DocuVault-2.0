@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using DocuVault.Data;
 
 namespace DocuVault
 {
@@ -12,7 +13,9 @@ namespace DocuVault
         public RegisterPage()
         {
             InitializeComponent();
-            _userService = new UserService(new AccessDB()); // Initialize AccessDB instance
+
+            // Instantiate AccessDB without the connection string
+            _userService = new UserService(new AccessDB()); // Initialize AccessDB instance without passing connection string
         }
 
         private void TextBox_Email_TextChanged(object sender, TextChangedEventArgs e)
