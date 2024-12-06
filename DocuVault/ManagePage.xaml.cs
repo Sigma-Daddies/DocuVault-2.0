@@ -4,7 +4,7 @@ using System.Windows;
 using Microsoft.Win32;
 using System.Windows.Controls;
 using System.Collections.Generic;
-using DocumentManagementSystem.Services;
+using DocuVault.Services;
 using DocuVault.Models;
 
 namespace DocuVault
@@ -27,7 +27,7 @@ namespace DocuVault
         }
 
         // Upload document button click event
-        private void UploadButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        private void UploadButton_Click(object sender, RoutedEventArgs e)
         {
             // Open file dialog to select a file
             OpenFileDialog openFileDialog = new OpenFileDialog();
@@ -54,7 +54,7 @@ namespace DocuVault
         }
 
         // Delete document button click event
-        private void DeleteButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (Documents_DataGrid.SelectedItem != null)
             {
@@ -62,7 +62,7 @@ namespace DocuVault
                 try
                 {
                     // Call the DeleteDocument method from DocumentService
-                    _documentService.DeleteDocument(_userId, selectedDocument.DocumentId);
+                    _documentService.DeleteDocument(selectedDocument.DocumentId);
                     MessageBox.Show("Document deleted successfully.");
                     LoadDocuments(); // Reload the document list
                 }
@@ -78,7 +78,7 @@ namespace DocuVault
         }
 
         // Download document button click event
-        private void DownloadButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        private void DownloadButton_Click(object sender, RoutedEventArgs e)
         {
             if (Documents_DataGrid.SelectedItem != null)
             {
@@ -113,15 +113,7 @@ namespace DocuVault
         private void LoadDocuments()
         {
             List<Document> documents = _documentService.GetDocumentsByUser(_userId);
-            Documents_DataGrid.ItemsSource = documents; // Set the ItemsSource of the DataGrid
-            Documents_DataGrid.Items.Refresh(); // Refresh DataGrid after loading
+            Documents_DataGrid.ItemsSource = documents; // Set the ItemsSource of the DataGrid to the list of documents
         }
-
-        // SelectionChanged event handler for the DataGrid
-        private void Documents_DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            // Handle the event when a document is selected in the DataGrid (optional)
-        }
-
     }
 }
