@@ -4,7 +4,7 @@ namespace DocuVault
 {
     public partial class MainWindow : Window
     {
-        private UserService _currentUser;
+        private UserService _currentUserService; // Changed to _currentUserService to avoid confusion
 
         public MainWindow()
         {
@@ -22,7 +22,7 @@ namespace DocuVault
         // Event handler for the "Home" button click
         private void NavigateHome(object sender, RoutedEventArgs e)
         {
-            NavigateToHomePage(_currentUser);
+            NavigateToHomePage(_currentUserService);
         }
 
         // Event handler for the "Manage" button click
@@ -50,19 +50,23 @@ namespace DocuVault
         }
 
         // These methods are already in place in your current code
-        public void NavigateToHomePage(UserService currentUser)
+        public void NavigateToHomePage(UserService currentUserService)
         {
-            _currentUser = currentUser; // Store the current user information
+            _currentUserService = currentUserService; // Store the current user information
             HomePage homePage = new HomePage();
             MainFrame.Navigate(homePage);
         }
 
         public void NavigateToManagePage()
         {
-            if (_currentUser != null)
+            if (_currentUserService != null)
             {
                 // Pass individual user details to ManagePage constructor
-                ManagePage managePage = new ManagePage(_currentUser.GetLoggedInUserId(), _currentUser.GetLoggedInUserEmail(), _currentUser.GetIsAdministrator());
+                ManagePage managePage = new ManagePage(
+                    _currentUserService.UserID,
+                    _currentUserService.Email,
+                    _currentUserService.IsAdministrator
+                );
                 MainFrame.Navigate(managePage);
             }
             else
@@ -72,10 +76,9 @@ namespace DocuVault
             }
         }
 
-
         public void NavigateToAuditTrailPage()
         {
-            if (_currentUser?.IsAdministrator == true)
+            if (_currentUserService?.IsAdministrator == true)
             {
                 AuditPage auditTrailPage = new AuditPage();
                 MainFrame.Navigate(auditTrailPage);
@@ -88,7 +91,7 @@ namespace DocuVault
 
         public void NavigateToUserManagementPage()
         {
-            if (_currentUser?.IsAdministrator == true)
+            if (_currentUserService?.IsAdministrator == true)
             {
                 UsersPage userManagementPage = new UsersPage();
                 MainFrame.Navigate(userManagementPage);
@@ -101,7 +104,7 @@ namespace DocuVault
 
         public void NavigateToLogout()
         {
-            _currentUser = null;  // Clear user session
+            _currentUserService = null;  // Clear user session
             NavigateToLoginPage();  // Redirect to login page
         }
     }
