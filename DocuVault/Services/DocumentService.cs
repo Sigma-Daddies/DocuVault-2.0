@@ -2,36 +2,35 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Data.OleDb;
-using System.Windows.Controls;
 using DocuVault.Models;
-using DocuVault.Data; // Importing Data namespace to access AccessDB
+using DocuVault.Data;
 
 namespace DocuVault.Services
 {
     public class DocumentService
     {
-        private const string StoragePath = @"C:\Users\punza\Desktop\newdocu\DocuVault-2.0-main\DocuVault.accdb";  // Update the storage path as needed
+        private readonly string _storagePath;
         private readonly AccessDB _accessDB;
 
-        public DocumentService()
+        public DocumentService(string storagePath)
         {
+            _storagePath = storagePath ?? throw new ArgumentNullException(nameof(storagePath));
             _accessDB = new AccessDB();
         }
 
-        // Method to retrieve documents uploaded by a specific user
+        // Retrieve documents uploaded by a specific user
         public List<Document> GetDocumentsByUser(int userId)
         {
             List<Document> documents = new List<Document>();
 
             _accessDB.ExecuteAsync(async connection =>
             {
-                string query = "SELECT * FROM Document WHERE UserId = @UserId";
+                string query = "SELECT * FROM Document WHERE UserId = ?";
                 using (OleDbCommand cmd = new OleDbCommand(query, connection))
                 {
-                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    cmd.Parameters.Add("?", OleDbType.Integer).Value = userId;
 
-                    // Cast DbDataReader to OleDbDataReader explicitly
-                    using (OleDbDataReader reader = (OleDbDataReader)await cmd.ExecuteReaderAsync())
+                    using (var reader = await cmd.ExecuteReaderAsync())
                     {
                         while (await reader.ReadAsync())
                         {
@@ -46,83 +45,75 @@ namespace DocuVault.Services
                         }
                     }
                 }
-            }).Wait();  // Ensure the task completes synchronously before returning
+            }).Wait();
 
             return documents;
         }
 
-        // Method to upload a document
+        // Upload a document
         public void UploadDocument(int userId, string fileName, string filePath)
         {
             try
             {
-                // Ensure the storage directory exists
-                if (!Directory.Exists(StoragePath))
+                if (!Directory.Exists(_storagePath))
                 {
-                    Directory.CreateDirectory(StoragePath);
+                    Directory.CreateDirectory(_storagePath);
                 }
 
                 string uniqueFileName = Guid.NewGuid() + Path.GetExtension(fileName);
-                string destinationPath = Path.Combine(StoragePath, uniqueFileName);
-
-                // Copy the file to the storage path
+                string destinationPath = Path.Combine(_storagePath, uniqueFileName);
                 File.Copy(filePath, destinationPath);
 
                 Console.WriteLine($"File uploaded successfully to {destinationPath}");
 
                 _accessDB.ExecuteAsync(async connection =>
                 {
-                    string query = "INSERT INTO Document (UserId, DocumentName, FilePath, UploadedAt) " +
-                                   "VALUES (?, ?, ?, ?);";  // Using positional parameters to avoid confusion with named parameters
-
+                    string query = "INSERT INTO Document (UserId, DocumentName, FilePath, UploadedAt) VALUES (?, ?, ?, ?)";
                     using (OleDbCommand cmd = new OleDbCommand(query, connection))
                     {
-                        // Explicitly set correct types for each parameter using Add method
-                        cmd.Parameters.Add("?", OleDbType.Integer).Value = userId; // UserId is integer
-                        cmd.Parameters.Add("?", OleDbType.VarChar).Value = fileName; // DocumentName is text (string)
-                        cmd.Parameters.Add("?", OleDbType.VarChar).Value = destinationPath; // FilePath is text (string)
-                        cmd.Parameters.Add("?", OleDbType.Date).Value = DateTime.Now; // UploadedAt is Date/Time
+                        cmd.Parameters.Add("?", OleDbType.Integer).Value = userId;
+                        cmd.Parameters.Add("?", OleDbType.VarChar).Value = fileName;
+                        cmd.Parameters.Add("?", OleDbType.VarChar).Value = destinationPath;
+                        cmd.Parameters.Add("?", OleDbType.Date).Value = DateTime.Now;
 
-                        try
+                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        if (rowsAffected > 0)
                         {
-                            int rowsAffected = await cmd.ExecuteNonQueryAsync();
-                            if (rowsAffected > 0)
-                            {
-                                Console.WriteLine("Document successfully inserted into the database.");
-                            }
-                            else
-                            {
-                                Console.WriteLine("Failed to insert document into the database.");
-                            }
+                            Console.WriteLine("Document successfully inserted into the database.");
                         }
-                        catch (Exception dbEx)
+                        else
                         {
-                            Console.WriteLine($"Database operation failed: {dbEx.Message}");
+                            Console.WriteLine("Failed to insert document into the database.");
                         }
                     }
-                }).Wait();  // Ensure the task completes synchronously before returning
+                }).Wait();
             }
             catch (Exception ex)
             {
-                Console.WriteLine("An error occurred during document upload: " + ex.Message);
+                Console.WriteLine($"An error occurred during document upload: {ex.Message}");
             }
         }
 
-        // Method to download a document
-        public void DownloadDocument(int userId, Document document, string destinationPath)
+        // Download a document (updated to support four parameters)
+        public void DownloadDocument(int userId, Document document, string destinationDirectory, string destinationFileName)
         {
             try
             {
+                // Ensure the document's file path exists
                 if (File.Exists(document.FilePath))
                 {
-                    string destinationFilePath = Path.Combine(destinationPath, document.DocumentName);
+                    // Construct the full destination path
+                    string destinationPath = Path.Combine(destinationDirectory, destinationFileName);
 
-                    if (!Directory.Exists(destinationPath))
+                    // Ensure the destination directory exists
+                    if (!Directory.Exists(destinationDirectory))
                     {
-                        Directory.CreateDirectory(destinationPath);
+                        Directory.CreateDirectory(destinationDirectory);
                     }
 
-                    File.Copy(document.FilePath, destinationFilePath, overwrite: true);
+                    // Copy the file to the destination path
+                    File.Copy(document.FilePath, destinationPath, overwrite: true);
+                    Console.WriteLine($"Document downloaded to {destinationPath}");
                 }
                 else
                 {
@@ -131,22 +122,22 @@ namespace DocuVault.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine("An error occurred during document download: " + ex.Message);
+                Console.WriteLine($"An error occurred during document download: {ex.Message}");
                 throw;
             }
         }
 
-        // Method to delete a document
+        // Delete a document
         public void DeleteDocument(int documentId)
         {
             try
             {
                 _accessDB.ExecuteAsync(async connection =>
                 {
-                    string query = "DELETE FROM Document WHERE DocumentId = @DocumentId";
+                    string query = "DELETE FROM Document WHERE DocumentId = ?";
                     using (OleDbCommand cmd = new OleDbCommand(query, connection))
                     {
-                        cmd.Parameters.AddWithValue("@DocumentId", documentId);
+                        cmd.Parameters.Add("?", OleDbType.Integer).Value = documentId;
 
                         int rowsAffected = await cmd.ExecuteNonQueryAsync();
                         if (rowsAffected > 0)
@@ -158,11 +149,11 @@ namespace DocuVault.Services
                             Console.WriteLine("Failed to delete document.");
                         }
                     }
-                }).Wait();  // Ensure the task completes synchronously before returning
+                }).Wait();
             }
             catch (Exception ex)
             {
-                Console.WriteLine("An error occurred during document deletion: " + ex.Message);
+                Console.WriteLine($"An error occurred during document deletion: {ex.Message}");
             }
         }
     }
