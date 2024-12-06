@@ -22,14 +22,14 @@ namespace DocuVault
             _userId = userId;
             _email = email;
             _isAdmin = isAdmin;
-            _documentService = new DocumentService(); // Initialize DocumentService
+
+            // Pass the storage path to the DocumentService constructor
+            _documentService = new DocumentService(@"C:\Users\punza\Desktop\newdocu\DocuVault-2.0-main\Documents");
             LoadDocuments(); // Load documents on page load
         }
 
-        // Upload document button click event
         private void UploadButton_Click(object sender, RoutedEventArgs e)
         {
-            // Open file dialog to select a file
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "All Files (*.*)|*.*"; // Filter for any type of file
             if (openFileDialog.ShowDialog() == true)
@@ -39,12 +39,9 @@ namespace DocuVault
 
                 try
                 {
-                    // Call the UploadDocument method from DocumentService
                     _documentService.UploadDocument(_userId, fileName, selectedFilePath);
                     MessageBox.Show("Document uploaded successfully.");
-
-                    // Reload the document list and update the DataGrid
-                    LoadDocuments(); // This will update the DataGrid with the newly uploaded document
+                    LoadDocuments();
                 }
                 catch (Exception ex)
                 {
@@ -53,7 +50,6 @@ namespace DocuVault
             }
         }
 
-        // Delete document button click event
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (Documents_DataGrid.SelectedItem != null)
@@ -61,10 +57,9 @@ namespace DocuVault
                 Document selectedDocument = (Document)Documents_DataGrid.SelectedItem;
                 try
                 {
-                    // Call the DeleteDocument method from DocumentService
                     _documentService.DeleteDocument(selectedDocument.DocumentId);
                     MessageBox.Show("Document deleted successfully.");
-                    LoadDocuments(); // Reload the document list
+                    LoadDocuments();
                 }
                 catch (Exception ex)
                 {
@@ -77,24 +72,24 @@ namespace DocuVault
             }
         }
 
-        // Download document button click event
         private void DownloadButton_Click(object sender, RoutedEventArgs e)
         {
             if (Documents_DataGrid.SelectedItem != null)
             {
                 Document selectedDocument = (Document)Documents_DataGrid.SelectedItem;
 
-                // Ask the user to choose a download location
                 SaveFileDialog saveFileDialog = new SaveFileDialog();
-                saveFileDialog.FileName = selectedDocument.DocumentName; // Default filename
+                saveFileDialog.FileName = selectedDocument.DocumentName;
                 if (saveFileDialog.ShowDialog() == true)
                 {
                     string destinationPath = saveFileDialog.FileName;
 
                     try
                     {
-                        // Call the DownloadDocument method from DocumentService
-                        _documentService.DownloadDocument(_userId, selectedDocument, Path.GetDirectoryName(destinationPath));
+                        string destinationDirectory = Path.GetDirectoryName(destinationPath);
+                        string destinationFileName = Path.GetFileName(destinationPath);
+
+                        _documentService.DownloadDocument(_userId, selectedDocument, destinationDirectory, destinationFileName);
                         MessageBox.Show("Document downloaded successfully.");
                     }
                     catch (Exception ex)
@@ -109,11 +104,10 @@ namespace DocuVault
             }
         }
 
-        // Reload the list of documents (this method is called after upload/delete)
         private void LoadDocuments()
         {
             List<Document> documents = _documentService.GetDocumentsByUser(_userId);
-            Documents_DataGrid.ItemsSource = documents; // Set the ItemsSource of the DataGrid to the list of documents
+            Documents_DataGrid.ItemsSource = documents;
         }
     }
 }
