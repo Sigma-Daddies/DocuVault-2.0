@@ -167,5 +167,69 @@ namespace DocuVault
             string query = "UPDATE Users SET IsLocked = False WHERE UserID = ?";
             await _accessDB.ExecuteNonQueryAsync(query, new OleDbParameter("?", userID));
         }
+
+
+        public async Task<bool> IsEmailRegisteredAsync(string email)
+        {
+            var accessDB = new AccessDB();
+            string query = "SELECT COUNT(*) FROM Users WHERE Email = @Email";
+
+            try
+            {
+                // Execute the query using AccessDB's ExecuteScalarAsync method
+                int count = await accessDB.ExecuteScalarAsync<int>(query, new OleDbParameter("@Email", email));
+                return count > 0;
+            }
+            catch (Exception ex)
+            {
+                // Log or handle the exception as needed
+                throw new Exception("Failed to check if email is registered: " + ex.Message, ex);
+            }
+        }
+
+        public async Task<bool> ResetPasswordAsync(string email, string newPassword)
+        {
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(newPassword))
+                throw new ArgumentException("Email and password must not be empty.");
+
+            string query = "UPDATE Users SET [Password] = @NewPasswordHash WHERE [Email] = @Email";
+
+            try
+            {
+                // Use the HashPassword method to compute the password hash
+                string newPasswordHash = HashPassword(newPassword);
+
+                // Execute the query using AccessDB's ExecuteNonQueryAsync method
+                int rowsAffected = await _accessDB.ExecuteNonQueryAsync(query,
+                    new OleDbParameter("@NewPasswordHash", newPasswordHash),
+                    new OleDbParameter("@Email", email));
+
+                if (rowsAffected == 0)
+                    throw new Exception("No rows were updated. The email may not exist.");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Log or re-throw the exception as needed
+                throw new Exception($"Error resetting password for email '{email}': {ex.Message}", ex);
+            }
+        }
+
+
+
+        private string ComputeHash(string input)
+        {
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
+                StringBuilder builder = new StringBuilder();
+                foreach (byte b in bytes)
+                {
+                    builder.Append(b.ToString("x2"));
+                }
+                return builder.ToString();
+            }
+        }
     }
 }
