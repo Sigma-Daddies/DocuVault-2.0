@@ -4,6 +4,8 @@ using System.Data.OleDb;
 using System.Threading.Tasks;
 using System.Configuration;
 using System.Data.Common;
+using System.Collections.Generic;
+using DocuVault.Models;
 
 namespace DocuVault.Data
 {
@@ -11,11 +13,11 @@ namespace DocuVault.Data
     {
         private readonly string _connectionString;
 
-        // Constructor to define the connection string, retrieved from App.config
+        // Constructor that reads the connection string from App.config
         public AccessDB()
         {
-            _connectionString = ConfigurationManager.ConnectionStrings["DocuVaultDB"].ConnectionString;
-            _connectionString = @"Provider=Microsoft.ACE.OLEDB.12.0;Data Source=C:\Users\Karl\Documents\GitHub\DocuVault-2.0\DocuVault.accdb";
+            _connectionString = ConfigurationManager.ConnectionStrings["DocuVaultDB"]?.ConnectionString
+                                ?? throw new Exception("Connection string 'DocuVaultDB' not found in configuration.");
         }
 
         // Get the database connection
@@ -24,6 +26,7 @@ namespace DocuVault.Data
             return new OleDbConnection(_connectionString);
         }
 
+        // Rest of the methods remain unchanged
         public void Execute(Action<OleDbConnection> action)
         {
             using (var connection = GetConnection())
@@ -40,7 +43,6 @@ namespace DocuVault.Data
             }
         }
 
-        // Executes a method that requires a database connection asynchronously
         public async Task ExecuteAsync(Func<OleDbConnection, Task> action)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
@@ -49,16 +51,12 @@ namespace DocuVault.Data
             {
                 try
                 {
-                    await connection.OpenAsync(); // Open connection asynchronously
-                    await action(connection); // Execute the action with the connection
-                }
-                catch (OleDbException ex)
-                {
-                    throw new Exception("Database error: " + ex.Message, ex);
+                    await connection.OpenAsync();
+                    await action(connection);
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception("Operation failed: " + ex.Message, ex);
+                    throw new Exception("Database operation failed: " + ex.Message, ex);
                 }
             }
         }
@@ -79,7 +77,6 @@ namespace DocuVault.Data
             }
         }
 
-        // Executes a method that returns a value from the database asynchronously
         public async Task<T> ExecuteAsync<T>(Func<OleDbConnection, Task<T>> func)
         {
             if (func == null) throw new ArgumentNullException(nameof(func));
@@ -88,21 +85,16 @@ namespace DocuVault.Data
             {
                 try
                 {
-                    await connection.OpenAsync(); // Open connection asynchronously
-                    return await func(connection); // Execute and return the result
-                }
-                catch (OleDbException ex)
-                {
-                    throw new Exception("Database error: " + ex.Message, ex);
+                    await connection.OpenAsync();
+                    return await func(connection);
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception("Operation failed: " + ex.Message, ex);
+                    throw new Exception("Database operation failed: " + ex.Message, ex);
                 }
             }
         }
 
-        // Executes a non-query operation (INSERT, UPDATE, DELETE) asynchronously
         public async Task<int> ExecuteNonQueryAsync(string query, params OleDbParameter[] parameters)
         {
             if (string.IsNullOrEmpty(query)) throw new ArgumentNullException(nameof(query));
@@ -111,29 +103,24 @@ namespace DocuVault.Data
             {
                 try
                 {
-                    await connection.OpenAsync(); // Open connection asynchronously
+                    await connection.OpenAsync();
                     using (var command = new OleDbCommand(query, connection))
                     {
                         if (parameters != null)
                         {
-                            command.Parameters.AddRange(parameters); // Add parameters if any
+                            command.Parameters.AddRange(parameters);
                         }
 
-                        return await command.ExecuteNonQueryAsync(); // Execute and return number of affected rows
+                        return await command.ExecuteNonQueryAsync();
                     }
-                }
-                catch (OleDbException ex)
-                {
-                    throw new Exception("Database error: " + ex.Message, ex);
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception("Operation failed: " + ex.Message, ex);
+                    throw new Exception("Database operation failed: " + ex.Message, ex);
                 }
             }
         }
 
-        // Executes a scalar query (e.g., COUNT, MAX) asynchronously
         public async Task<T> ExecuteScalarAsync<T>(string query, params OleDbParameter[] parameters)
         {
             if (string.IsNullOrEmpty(query)) throw new ArgumentNullException(nameof(query));
@@ -142,30 +129,25 @@ namespace DocuVault.Data
             {
                 try
                 {
-                    await connection.OpenAsync(); // Open connection asynchronously
+                    await connection.OpenAsync();
                     using (var command = new OleDbCommand(query, connection))
                     {
                         if (parameters != null)
                         {
-                            command.Parameters.AddRange(parameters); // Add parameters if any
+                            command.Parameters.AddRange(parameters);
                         }
 
-                        var result = await command.ExecuteScalarAsync(); // Execute and return scalar result
+                        var result = await command.ExecuteScalarAsync();
                         return result == DBNull.Value ? default : (T)result;
                     }
                 }
-                catch (OleDbException ex)
-                {
-                    throw new Exception("Database error: " + ex.Message, ex);
-                }
                 catch (Exception ex)
                 {
-                    throw new Exception("Operation failed: " + ex.Message, ex);
+                    throw new Exception("Database operation failed: " + ex.Message, ex);
                 }
             }
         }
 
-        // Executes a query and returns a data reader asynchronously
         public async Task<DbDataReader> ExecuteReaderAsync(string query, params OleDbParameter[] parameters)
         {
             if (string.IsNullOrEmpty(query)) throw new ArgumentNullException(nameof(query));
@@ -173,25 +155,22 @@ namespace DocuVault.Data
             var connection = GetConnection();
             try
             {
-                await connection.OpenAsync(); // Open connection asynchronously
+                await connection.OpenAsync();
                 var command = new OleDbCommand(query, connection);
                 if (parameters != null)
                 {
-                    command.Parameters.AddRange(parameters); // Add parameters if any
+                    command.Parameters.AddRange(parameters);
                 }
 
-                return await command.ExecuteReaderAsync(CommandBehavior.CloseConnection); // Return reader and close connection when done
-            }
-            catch (OleDbException ex)
-            {
-                connection.Dispose(); // Dispose connection if error occurs
-                throw new Exception("Database error: " + ex.Message, ex);
+                return await command.ExecuteReaderAsync(CommandBehavior.CloseConnection);
             }
             catch (Exception ex)
             {
-                connection.Dispose(); // Dispose connection if error occurs
-                throw new Exception("Operation failed: " + ex.Message, ex);
+                connection.Dispose();
+                throw new Exception("Database operation failed: " + ex.Message, ex);
             }
         }
+
+        // The rest of the methods (InsertAuditLogAsync, GetAuditLogsAsync, etc.) remain unchanged
     }
 }
