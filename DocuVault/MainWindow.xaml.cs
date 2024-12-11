@@ -4,7 +4,7 @@ namespace DocuVault
 {
     public partial class MainWindow : Window
     {
-        private UserService _currentUserService; // Changed to _currentUserService to avoid confusion
+        private UserService _currentUserService;
 
         public MainWindow()
         {
@@ -49,10 +49,9 @@ namespace DocuVault
             NavigateToLogout();
         }
 
-        // These methods are already in place in your current code
         public void NavigateToHomePage(UserService currentUserService)
         {
-            _currentUserService = currentUserService; // Store the current user information
+            _currentUserService = currentUserService;
             HomePage homePage = new HomePage();
             MainFrame.Navigate(homePage);
         }
@@ -61,7 +60,6 @@ namespace DocuVault
         {
             if (_currentUserService != null)
             {
-                // Pass individual user details to ManagePage constructor
                 ManagePage managePage = new ManagePage(
                     _currentUserService.UserID,
                     _currentUserService.Email,
@@ -80,8 +78,12 @@ namespace DocuVault
         {
             if (_currentUserService?.IsAdministrator == true)
             {
-                AuditPage auditTrailPage = new AuditPage();
-                MainFrame.Navigate(auditTrailPage);
+                // Ensure that we don't navigate to the same page repeatedly
+                if (!(MainFrame.Content is AuditPage))
+                {
+                    AuditPage auditPage = new AuditPage(_currentUserService.IsAdministrator);
+                    MainFrame.Navigate(auditPage);
+                }
             }
             else
             {
@@ -89,11 +91,13 @@ namespace DocuVault
             }
         }
 
+
+
         public void NavigateToUserManagementPage()
         {
             if (_currentUserService?.IsAdministrator == true)
             {
-                UsersPage userManagementPage = new UsersPage();
+                UsersPage userManagementPage = new UsersPage(_currentUserService.IsAdministrator);
                 MainFrame.Navigate(userManagementPage);
             }
             else
