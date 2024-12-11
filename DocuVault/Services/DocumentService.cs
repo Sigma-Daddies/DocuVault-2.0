@@ -4,20 +4,23 @@ using System.Collections.Generic;
 using System.Data.OleDb;
 using DocuVault.Models;
 using DocuVault.Data;
+using DocuVault.Services; // Add this to use AuditService
 using System.Windows.Controls;
+using System.Windows; // For MessageBox
 
 namespace DocuVault.Services
 {
     public class DocumentService
     {
         private readonly string _storagePath;
-        private const string StoragePath = @"C:\Documents\Data\";
         private readonly AccessDB _accessDB;
+        private readonly AuditService _auditService;
 
         public DocumentService(string storagePath)
         {
             _storagePath = storagePath ?? throw new ArgumentNullException(nameof(storagePath));
             _accessDB = new AccessDB();
+            _auditService = new AuditService(_accessDB); // Initialize the AuditService
         }
 
         // Retrieve documents uploaded by a specific user
@@ -53,64 +56,66 @@ namespace DocuVault.Services
         }
 
         // Upload a document
-        public void UploadDocument(int userId, string fileName, string filePath)
+        public async void UploadDocument(int userId, string fileName, string filePath)
         {
             try
             {
                 // Ensure the storage directory exists
-                if (!Directory.Exists(StoragePath))
+                if (!Directory.Exists(_storagePath))
                 {
-                    Directory.CreateDirectory(StoragePath);
+                    Directory.CreateDirectory(_storagePath);
+                    MessageBox.Show("Storage path created: " + _storagePath);  // Debugging line
                 }
 
                 string uniqueFileName = Guid.NewGuid() + Path.GetExtension(fileName);
-                string destinationPath = Path.Combine(StoragePath, uniqueFileName);
+                string destinationPath = Path.Combine(_storagePath, uniqueFileName);
 
                 // Copy the file to the storage path
                 File.Copy(filePath, destinationPath);
-
-                Console.WriteLine($"File uploaded successfully to {destinationPath}");
+                MessageBox.Show("File uploaded successfully to: " + destinationPath); // Debugging line
 
                 _accessDB.Execute(connection =>
                 {
                     string query = "INSERT INTO Document (UserId, DocumentName, FilePath, UploadedAt) " +
-                                   "VALUES (?, ?, ?, ?);";  // Using positional parameters to avoid confusion with named parameters
+                                   "VALUES (?, ?, ?, ?);";
 
                     using (OleDbCommand cmd = new OleDbCommand(query, connection))
                     {
-                        // Explicitly set correct types for each parameter using Add method
-
-                        cmd.Parameters.Add("?", OleDbType.Integer).Value = userId; // UserId is integer
-                        cmd.Parameters.Add("?", OleDbType.VarChar).Value = fileName; // DocumentName is text (string)
-                        cmd.Parameters.Add("?", OleDbType.VarChar).Value = destinationPath; // FilePath is text (string)
-                        cmd.Parameters.Add("?", OleDbType.Date).Value = DateTime.Now; // UploadedAt is Date/Time
+                        cmd.Parameters.Add("?", OleDbType.Integer).Value = userId;
+                        cmd.Parameters.Add("?", OleDbType.VarChar).Value = fileName;
+                        cmd.Parameters.Add("?", OleDbType.VarChar).Value = destinationPath;
+                        cmd.Parameters.Add("?", OleDbType.Date).Value = DateTime.Now;
 
                         try
                         {
                             int rowsAffected = cmd.ExecuteNonQuery();
                             if (rowsAffected > 0)
                             {
-                                Console.WriteLine("Document successfully inserted into the database.");
+                                MessageBox.Show("Document successfully inserted into the database."); // Debugging line
                             }
                             else
                             {
-                                Console.WriteLine("Failed to insert document into the database.");
+                                MessageBox.Show("Failed to insert document into the database."); // Debugging line
                             }
                         }
                         catch (Exception dbEx)
                         {
-                            Console.WriteLine($"Database operation failed: {dbEx.Message}");
+                            MessageBox.Show($"Database operation failed: {dbEx.Message}");  // Debugging line
                         }
                     }
                 });
+
+                // Log the audit entry for document upload
+                await _auditService.LogAuditAsync(userId, $"User uploaded file: {fileName}");
+
             }
             catch (Exception ex)
             {
-                Console.WriteLine("An error occurred during document upload: " + ex.Message);
+                MessageBox.Show("An error occurred during document upload: " + ex.Message);
             }
         }
 
-        // Download a document (updated to support four parameters)
+        // Download a document
         public void DownloadDocument(int userId, Document document, string destinationPath)
         {
             try
@@ -130,10 +135,13 @@ namespace DocuVault.Services
                 {
                     throw new FileNotFoundException($"Document not found at {document.FilePath}.");
                 }
+
+                // Log the audit entry for document download
+                _auditService.LogAuditAsync(userId, $"User downloaded file: {document.DocumentName}").Wait();
             }
             catch (Exception ex)
             {
-                Console.WriteLine("An error occurred during document download: " + ex.Message);
+                MessageBox.Show("An error occurred during document download: " + ex.Message);
                 throw;
             }
         }
@@ -174,11 +182,11 @@ namespace DocuVault.Services
                 if (File.Exists(filePath))
                 {
                     File.Delete(filePath);
-                    Console.WriteLine("File deleted successfully.");
+                    MessageBox.Show("File deleted successfully.");
                 }
                 else
                 {
-                    Console.WriteLine($"File not found at {filePath}.");
+                    MessageBox.Show($"File not found at {filePath}.");
                 }
 
                 // Delete the record from the database
@@ -191,23 +199,13 @@ namespace DocuVault.Services
                         cmd.ExecuteNonQuery();
                     }
                 });
+
+                // Log the audit entry for document deletion
+                _auditService.LogAuditAsync(userId, $"User deleted file: {documentName}").Wait();
             }
             catch (Exception ex)
             {
-                Console.WriteLine("An error occurred during document deletion: " + ex.Message);
-            }
-        }
-
-        public void LoadDocuments(int userId, DataGrid documentsDataGrid)
-        {
-            if (userId != 0)
-            {
-                List<Document> documents = GetDocumentsByUser(userId);
-                documentsDataGrid.Items.Clear(); // Clear existing items
-
-                // Set the data source for the DataGrid
-                documentsDataGrid.ItemsSource = documents;
-                documentsDataGrid.Items.Refresh(); // Ensure DataGrid is refreshed
+                MessageBox.Show("An error occurred during document deletion: " + ex.Message);
             }
         }
     }
