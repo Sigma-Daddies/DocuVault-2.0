@@ -54,14 +54,14 @@ namespace DocuVault
 
         private void Button_Audit_Click(object sender, RoutedEventArgs e)
         {
-            // Navigate to AuditPage (admin-only access)
-            Dashboard.Navigate(new AuditPage());
+            // Pass the isAdmin flag to AuditPage
+            Dashboard.Navigate(new AuditPage(_isAdmin));
         }
 
         private void Button_Users_Click(object sender, RoutedEventArgs e)
         {
-            // Navigate to UsersPage (admin-only access)
-            Dashboard.Navigate(new UsersPage());
+            // Pass the isAdmin flag to UsersPage
+            Dashboard.Navigate(new UsersPage(_isAdmin));
         }
 
         private void Button_Logout_Click_1(object sender, RoutedEventArgs e)
