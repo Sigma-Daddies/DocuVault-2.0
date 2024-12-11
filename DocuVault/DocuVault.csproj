@@ -118,8 +118,10 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Data\AccessDB.cs" />
+    <Compile Include="Models\Audit.cs" />
     <Compile Include="Models\Client.cs" />
     <Compile Include="Models\Document.cs" />
+    <Compile Include="Services\AuditService.cs" />
     <Compile Include="Services\DocumentService.cs" />
     <Compile Include="Services\EmailService.cs" />
     <Compile Include="Services\UserService.cs" />
@@ -220,7 +222,6 @@
     <Resource Include="Fonts\PlusJakartaSans-Bold.ttf" />
     <Resource Include="Fonts\PlusJakartaSans-Regular.ttf" />
     <Resource Include="Fonts\PlusJakartaSans-SemiBold.ttf" />
-    <None Include="appsettings.json" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
