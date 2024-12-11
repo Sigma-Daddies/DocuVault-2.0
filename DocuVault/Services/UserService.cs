@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DocuVault.Models;
 using DocuVault.Data;
+using System.Windows;
 
 namespace DocuVault
 {
@@ -31,41 +32,33 @@ namespace DocuVault
 
             if (await IsAuthenticatedAsync(email, password))
             {
-                await GetLoggedInUserDetailsAsync(email); // Fetch and populate user details
+                await GetLoggedInUserDetailsAsync(email);
                 return true;
             }
             return false;
         }
 
-        // Authenticate user credentials asynchronously
+        // Authenticate user credentials
         private async Task<bool> IsAuthenticatedAsync(string email, string password)
         {
-            return await _accessDB.ExecuteAsync(async connection =>
-            {
-                string hashedPassword = HashPassword(password);
-                string query = "SELECT COUNT(*) FROM Users WHERE Email = @Email AND Password = @Password AND IsLocked = False";
+            string query = "SELECT COUNT(*) FROM Users WHERE Email = @Email AND Password = @Password AND IsLocked = False";
+            string hashedPassword = HashPassword(password);
 
-                using (OleDbCommand command = new OleDbCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@Email", email);
-                    command.Parameters.AddWithValue("@Password", hashedPassword);
-
-                    int userCount = (int)await command.ExecuteScalarAsync();
-                    return userCount > 0; // User is authenticated and not locked
-                }
-            });
+            return await _accessDB.ExecuteScalarAsync<int>(query,
+                new OleDbParameter("@Email", email),
+                new OleDbParameter("@Password", hashedPassword)) > 0;
         }
 
-        // Fetch the currently logged-in user's details asynchronously from the database
+        // Fetch the currently logged-in user's details
         private async Task GetLoggedInUserDetailsAsync(string email)
         {
+            string query = "SELECT UserID, Email, IsAdmin FROM Users WHERE Email = @Email";
             await _accessDB.ExecuteAsync(async connection =>
             {
-                string query = "SELECT UserID, Email, IsAdmin FROM Users WHERE Email = @Email";
-                using (OleDbCommand command = new OleDbCommand(query, connection))
+                using (var command = new OleDbCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@Email", email);
-                    using (OleDbDataReader reader = (OleDbDataReader)await command.ExecuteReaderAsync())
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
                         if (await reader.ReadAsync())
                         {
@@ -82,63 +75,43 @@ namespace DocuVault
             });
         }
 
-        // Method to register a new user
+        // Register a new user
         public async Task<bool> RegisterUserAsync(string email, string password, string confirmPassword)
         {
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
-                throw new ArgumentException("Email and password must not be empty.");
-
-            if (password != confirmPassword)
-                throw new ArgumentException("Passwords do not match.");
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || password != confirmPassword)
+                throw new ArgumentException("Invalid registration details.");
 
             string hashedPassword = HashPassword(password);
+            string checkEmailQuery = "SELECT COUNT(*) FROM Users WHERE Email = ?";
 
-            return await _accessDB.ExecuteAsync(async connection =>
-            {
-                // Check if email already exists
-                string checkEmailQuery = "SELECT COUNT(*) FROM Users WHERE Email = ?";
-                using (var checkEmailCommand = new OleDbCommand(checkEmailQuery, connection))
-                {
-                    checkEmailCommand.Parameters.Add("?", OleDbType.VarWChar).Value = email;
-                    int emailExists = (int)await checkEmailCommand.ExecuteScalarAsync();
-                    if (emailExists > 0)
-                        throw new Exception("This email is already registered.");
-                }
+            if (await _accessDB.ExecuteScalarAsync<int>(checkEmailQuery, new OleDbParameter("?", email)) > 0)
+                throw new Exception("This email is already registered.");
 
-                // Insert new user into database
-                string insertQuery = "INSERT INTO Users (Email, [Password], IsAdmin, IsLocked) VALUES (?, ?, ?, ?)";
-                using (var insertCommand = new OleDbCommand(insertQuery, connection))
-                {
-                    insertCommand.Parameters.Add("?", OleDbType.VarWChar).Value = email;
-                    insertCommand.Parameters.Add("?", OleDbType.VarWChar).Value = hashedPassword;
-                    insertCommand.Parameters.Add("?", OleDbType.Boolean).Value = false; // Default to non-admin
-                    insertCommand.Parameters.Add("?", OleDbType.Boolean).Value = false; // Default to unlocked
-                    int rowsAffected = await insertCommand.ExecuteNonQueryAsync();
-                    return rowsAffected > 0;
-                }
-            });
+            string insertQuery = "INSERT INTO Users (Email, [Password], IsAdmin, IsLocked) VALUES (?, ?, ?, ?)";
+            return await _accessDB.ExecuteNonQueryAsync(insertQuery,
+                new OleDbParameter("?", email),
+                new OleDbParameter("?", hashedPassword),
+                new OleDbParameter("?", false),
+                new OleDbParameter("?", false)) > 0;
         }
 
         // Utility method to hash a password
         private string HashPassword(string password)
         {
             using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                return Convert.ToBase64String(hashBytes);
-            }
+                return Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
         }
 
-        // Fetch all non-admin users from the database
+        // Get all non-admin users
         public async Task<List<Client>> GetAllNonAdminUsersAsync()
         {
-            var clients = new List<Client>();
             string query = "SELECT UserID, Email, IsLocked FROM Users WHERE IsAdmin = False";
+            var clients = new List<Client>();
 
             return await _accessDB.ExecuteAsync(async connection =>
             {
-                using (OleDbCommand command = new OleDbCommand(query, connection))
-                using (OleDbDataReader reader = (OleDbDataReader)await command.ExecuteReaderAsync())
+                using (var command = new OleDbCommand(query, connection))
+                using (var reader = await command.ExecuteReaderAsync())
                 {
                     while (await reader.ReadAsync())
                     {
@@ -154,82 +127,74 @@ namespace DocuVault
             });
         }
 
-        // Method to lock a user account
+        // Lock a user account
         public async Task LockUserAccountAsync(int userID)
         {
             string query = "UPDATE Users SET IsLocked = True WHERE UserID = ?";
             await _accessDB.ExecuteNonQueryAsync(query, new OleDbParameter("?", userID));
         }
 
-        // Method to unlock a user account
+        // Unlock a user account
         public async Task UnlockUserAccountAsync(int userID)
         {
             string query = "UPDATE Users SET IsLocked = False WHERE UserID = ?";
             await _accessDB.ExecuteNonQueryAsync(query, new OleDbParameter("?", userID));
         }
 
-
+        // Check if email is registered
         public async Task<bool> IsEmailRegisteredAsync(string email)
         {
-            var accessDB = new AccessDB();
             string query = "SELECT COUNT(*) FROM Users WHERE Email = @Email";
-
-            try
-            {
-                // Execute the query using AccessDB's ExecuteScalarAsync method
-                int count = await accessDB.ExecuteScalarAsync<int>(query, new OleDbParameter("@Email", email));
-                return count > 0;
-            }
-            catch (Exception ex)
-            {
-                // Log or handle the exception as needed
-                throw new Exception("Failed to check if email is registered: " + ex.Message, ex);
-            }
+            return await _accessDB.ExecuteScalarAsync<int>(query, new OleDbParameter("@Email", email)) > 0;
         }
 
+        // Reset user password
         public async Task<bool> ResetPasswordAsync(string email, string newPassword)
         {
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(newPassword))
-                throw new ArgumentException("Email and password must not be empty.");
-
             string query = "UPDATE Users SET [Password] = @NewPasswordHash WHERE [Email] = @Email";
+            string newPasswordHash = HashPassword(newPassword);
 
-            try
-            {
-                // Use the HashPassword method to compute the password hash
-                string newPasswordHash = HashPassword(newPassword);
+            int rowsAffected = await _accessDB.ExecuteNonQueryAsync(query,
+                new OleDbParameter("@NewPasswordHash", newPasswordHash),
+                new OleDbParameter("@Email", email));
 
-                // Execute the query using AccessDB's ExecuteNonQueryAsync method
-                int rowsAffected = await _accessDB.ExecuteNonQueryAsync(query,
-                    new OleDbParameter("@NewPasswordHash", newPasswordHash),
-                    new OleDbParameter("@Email", email));
+            if (rowsAffected == 0) throw new Exception("No rows were updated. The email may not exist.");
 
-                if (rowsAffected == 0)
-                    throw new Exception("No rows were updated. The email may not exist.");
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                // Log or re-throw the exception as needed
-                throw new Exception($"Error resetting password for email '{email}': {ex.Message}", ex);
-            }
+            return true;
         }
 
-
-
-        private string ComputeHash(string input)
+        // Log user actions for the audit trail
+        public async Task LogUserActionAsync(int userID, string action)
         {
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
-                StringBuilder builder = new StringBuilder();
-                foreach (byte b in bytes)
-                {
-                    builder.Append(b.ToString("x2"));
-                }
-                return builder.ToString();
-            }
+            string query = "INSERT INTO Audit (UserId, [Action], [Timestamp]) VALUES (?, ?, ?)";
+            await _accessDB.ExecuteNonQueryAsync(query,
+                new OleDbParameter("?", userID),
+                new OleDbParameter("?", action),
+                new OleDbParameter("?", DateTime.Now));
         }
+        public async Task<List<Client>> GetAllUsersIncludingAdminsAsync()
+        {
+            string query = "SELECT UserID, Email, IsLocked FROM Users";
+            var clients = new List<Client>();
+
+            return await _accessDB.ExecuteAsync(async connection =>
+            {
+                using (var command = new OleDbCommand(query, connection))
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        clients.Add(new Client
+                        {
+                            UserID = reader.GetInt32(reader.GetOrdinal("UserID")),
+                            Email = reader.GetString(reader.GetOrdinal("Email")),
+                            Status = reader.GetBoolean(reader.GetOrdinal("IsLocked")) ? "Locked" : "Active"
+                        });
+                    }
+                }
+                return clients;
+            });
+        }
+
     }
 }
