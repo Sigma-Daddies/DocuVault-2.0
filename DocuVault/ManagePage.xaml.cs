@@ -3,9 +3,11 @@ using System.IO;
 using System.Windows;
 using Microsoft.Win32;
 using System.Windows.Controls;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using DocuVault.Services;
 using DocuVault.Models;
+using DocuVault.Data;
+using System.Configuration; // For reading from App.config
 
 namespace DocuVault
 {
@@ -15,6 +17,10 @@ namespace DocuVault
         private string _email;
         private bool _isAdmin;
         private DocumentService _documentService;
+        private AuditService _auditService;
+        private AccessDB _accessDB;
+
+        private ObservableCollection<Document> _documents;
 
         public ManagePage(int userId, string email, bool isAdmin)
         {
@@ -23,38 +29,49 @@ namespace DocuVault
             _email = email;
             _isAdmin = isAdmin;
 
-            // Pass the storage path to the DocumentService constructor
-            _documentService = new DocumentService(@"C:\Users\punza\Desktop\newdocu\DocuVault-2.0-main\Documents");
-            LoadDocuments(); // Load documents on page load
+            _accessDB = new AccessDB();
+            _auditService = new AuditService(_accessDB);
+
+            // Initialize DocumentService with storage path
+            string storagePath = ConfigurationManager.AppSettings["StoragePath"] ?? @"C:\Documents\Data\";
+            _documentService = new DocumentService(storagePath);
+
+            LoadDocuments(); // Load documents for the user
         }
 
-        private void UploadButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        private void UploadButton_Click(object sender, RoutedEventArgs e)
         {
             // Open file dialog to select a file
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "All Files (*.*)|*.*"; // Filter for any type of file
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Filter = "All Files (*.*)|*.*" // Filter for any type of file
+            };
+
             if (openFileDialog.ShowDialog() == true)
             {
                 string selectedFilePath = openFileDialog.FileName;
                 string fileName = Path.GetFileName(selectedFilePath);
 
+                MessageBox.Show("Selected file: " + selectedFilePath);  // Debugging line
+
                 try
                 {
-                    // Call the UploadDocument method from DocumentService
+                    // Call the synchronous UploadDocument method from DocumentService
                     _documentService.UploadDocument(_userId, fileName, selectedFilePath);
                     MessageBox.Show("Document uploaded successfully.");
 
-                    // Reload the document list and update the DataGrid
-                    LoadDocuments(); // This will update the DataGrid with the newly uploaded document
+                    // Reload the document list
+                    LoadDocuments();
+                    Documents_DataGrid.Items.Refresh();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("An error occurred while uploading the document: " + ex.Message);
+                    MessageBox.Show($"An error occurred while uploading the document: {ex.Message}");
                 }
             }
         }
 
-        private void DeleteButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (Documents_DataGrid.SelectedItem != null)
             {
@@ -64,11 +81,13 @@ namespace DocuVault
                     // Call the DeleteDocument method from DocumentService
                     _documentService.DeleteDocument(_userId, selectedDocument.DocumentId);
                     MessageBox.Show("Document deleted successfully.");
-                    LoadDocuments(); // Reload the document list
+
+                    // Reload the document list
+                    LoadDocuments();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("An error occurred while deleting the document: " + ex.Message);
+                    MessageBox.Show($"An error occurred while deleting the document: {ex.Message}");
                 }
             }
             else
@@ -77,28 +96,30 @@ namespace DocuVault
             }
         }
 
-        private void DownloadButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        private void DownloadButton_Click(object sender, RoutedEventArgs e)
         {
             if (Documents_DataGrid.SelectedItem != null)
             {
                 Document selectedDocument = (Document)Documents_DataGrid.SelectedItem;
 
                 // Ask the user to choose a download location
-                SaveFileDialog saveFileDialog = new SaveFileDialog();
-                saveFileDialog.FileName = selectedDocument.DocumentName; // Default filename
+                SaveFileDialog saveFileDialog = new SaveFileDialog
+                {
+                    FileName = selectedDocument.DocumentName // Default filename
+                };
                 if (saveFileDialog.ShowDialog() == true)
                 {
                     string destinationPath = saveFileDialog.FileName;
 
                     try
                     {
-                        // Call the DownloadDocument method from DocumentService
+                        // Call the synchronous DownloadDocument method from DocumentService
                         _documentService.DownloadDocument(_userId, selectedDocument, Path.GetDirectoryName(destinationPath));
                         MessageBox.Show("Document downloaded successfully.");
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("An error occurred while downloading the document: " + ex.Message);
+                        MessageBox.Show($"An error occurred while downloading the document: {ex.Message}");
                     }
                 }
             }
@@ -108,11 +129,19 @@ namespace DocuVault
             }
         }
 
+        // Load the documents into the DataGrid
         private void LoadDocuments()
         {
-            List<Document> documents = _documentService.GetDocumentsByUser(_userId);
-            Documents_DataGrid.ItemsSource = documents; // Set the ItemsSource of the DataGrid
-            Documents_DataGrid.Items.Refresh(); // Refresh DataGrid after loading
+            try
+            {
+                _documents = new ObservableCollection<Document>(_documentService.GetDocumentsByUser(_userId));
+                Documents_DataGrid.ItemsSource = _documents;
+                Documents_DataGrid.Items.Refresh();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred while loading documents: {ex.Message}");
+            }
         }
 
         private void Documents_DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
