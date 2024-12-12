@@ -33,86 +33,79 @@ namespace DocuVault
         // Send verification code
         private async void Button_EmailAction_Click(object sender, RoutedEventArgs e)
         {
-            string recipientEmail = TextBox_Email.Text.Trim(); // Get the input and trim whitespace
+            string recipientEmail = TextBox_Email.Text.Trim();
 
-            // Check if the email is registered
             if (await _userService.IsEmailRegisteredAsync(recipientEmail))
             {
-                _verificationPin = GenerateVerificationPin(); // Generate a random PIN
-                _pinGeneratedTime = DateTime.Now; // Store the generation time
+                _verificationPin = GenerateVerificationPin();
+                _pinGeneratedTime = DateTime.Now;
 
                 try
                 {
-                    await _emailService.SendEmailAsync(recipientEmail, "VERIFICATION PIN", "OOP DMS PIN", "<strong></strong>", _verificationPin);
-                    MessageBox.Show("Email sent with your verification PIN!");
+                    string plainTextContent = "Please use the following PIN to reset your password.";
+                    string htmlContent = "<p>Please use the following PIN to reset your password:</p>";
+
+                    await _emailService.SendEmailAsync(recipientEmail, "Verification PIN", plainTextContent, htmlContent, _verificationPin);
+                    MessageBox.Show("Verification PIN sent to your email!");
                 }
                 catch (Exception ex)
                 {
-                    // Log or handle the error
                     MessageBox.Show($"Error sending email: {ex.Message}");
                 }
             }
             else
             {
-                MessageBox.Show("Email address not registered.");
+                MessageBox.Show("Email address is not registered.");
                 TextBox_Email.Clear();
             }
         }
 
-        // Generate a random 6-digit verification code
         private async void Btn_Reset_Click(object sender, RoutedEventArgs e)
         {
+            if (DateTime.Now - _pinGeneratedTime > _pinValidityDuration)
+            {
+                MessageBox.Show("The PIN has expired. Please request a new one.");
+                return;
+            }
+
             string enteredPin = TextBox_Code.Text.Trim();
+            if (enteredPin != _verificationPin)
+            {
+                MessageBox.Show("Invalid PIN. Please try again.");
+                return;
+            }
+
             string newPassword = PasswordBox_Password.Password.Trim();
             string confirmNewPassword = PasswordBox_Password_Confirm.Password.Trim();
 
-            // Ensure passwords match before resetting
             if (newPassword != confirmNewPassword)
             {
                 MessageBox.Show("Passwords do not match. Please try again.");
                 return;
             }
 
-            // Check if the PIN is still valid
-            if (DateTime.Now - _pinGeneratedTime <= _pinValidityDuration)
+            string userEmail = TextBox_Email.Text.Trim();
+            try
             {
-                if (enteredPin == _verificationPin)
+                if (await _userService.ResetPasswordAsync(userEmail, newPassword))
                 {
-                    string userEmail = TextBox_Email.Text.Trim(); // Retrieve user email
-
-                    // Reset the password using the existing service
-                    bool isPasswordChanged = await _userService.ResetPasswordAsync(userEmail, newPassword);
-
-                    if (isPasswordChanged)
-                    {
-                        MessageBox.Show("Password changed successfully!");
-                        // Clear fields and navigate back to login or email field for another reset
-                        TextBox_Email.Clear();
-                        TextBox_Code.Clear();
-                        PasswordBox_Password.Clear();
-                        PasswordBox_Password_Confirm.Clear();
-                        NavigationService.Navigate(new LoginPage());  // Optional: navigate to login page
-                    }
-                    else
-                    {
-                        MessageBox.Show("Failed to change the password. Please try again.");
-                    }
+                    MessageBox.Show("Password reset successfully.");
+                    NavigationService.Navigate(new LoginPage());
                 }
                 else
                 {
-                    MessageBox.Show("Invalid PIN. Please try again.");
+                    MessageBox.Show("Failed to reset password. Please try again.");
                 }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("The PIN has expired. Please request a new one.");
+                MessageBox.Show($"Error resetting password: {ex.Message}");
             }
         }
 
         // Back to login page link click handler
         private void BackToLogin_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            // Navigate to LoginPage
             NavigationService.Navigate(new LoginPage());
         }
 
@@ -121,7 +114,6 @@ namespace DocuVault
             // Password validation logic or feedback
         }
 
-        // Event handler for when the confirm password text changes
         private void PasswordBox_Password_Confirm_Changed(object sender, RoutedEventArgs e)
         {
             // Confirm password matching logic
@@ -129,12 +121,12 @@ namespace DocuVault
 
         private void TextBox_Email_TextChanged(object sender, TextChangedEventArgs e)
         {
-
+            // Email validation logic or feedback
         }
 
         private void TextBox_Code_TextChanged(object sender, TextChangedEventArgs e)
         {
-
+            // Code validation logic or feedback
         }
     }
 }

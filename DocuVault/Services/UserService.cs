@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using DocuVault.Models;
 using DocuVault.Data;
-using System.Windows;
 
 namespace DocuVault
 {
@@ -57,7 +56,7 @@ namespace DocuVault
             {
                 using (var command = new OleDbCommand(query, connection))
                 {
-                    command.Parameters.AddWithValue("@Email", email);
+                    command.Parameters.Add(new OleDbParameter("@Email", email));
                     using (var reader = await command.ExecuteReaderAsync())
                     {
                         if (await reader.ReadAsync())
@@ -108,7 +107,7 @@ namespace DocuVault
             string query = "SELECT UserID, Email, IsLocked FROM Users WHERE IsAdmin = False";
             var clients = new List<Client>();
 
-            return await _accessDB.ExecuteAsync(async connection =>
+            await _accessDB.ExecuteAsync(async connection =>
             {
                 using (var command = new OleDbCommand(query, connection))
                 using (var reader = await command.ExecuteReaderAsync())
@@ -123,8 +122,9 @@ namespace DocuVault
                         });
                     }
                 }
-                return clients;
             });
+
+            return clients;
         }
 
         // Lock a user account
@@ -172,12 +172,14 @@ namespace DocuVault
                 new OleDbParameter("?", action),
                 new OleDbParameter("?", DateTime.Now));
         }
+
+        // Get all users including admins
         public async Task<List<Client>> GetAllUsersIncludingAdminsAsync()
         {
             string query = "SELECT UserID, Email, IsLocked FROM Users";
             var clients = new List<Client>();
 
-            return await _accessDB.ExecuteAsync(async connection =>
+            await _accessDB.ExecuteAsync(async connection =>
             {
                 using (var command = new OleDbCommand(query, connection))
                 using (var reader = await command.ExecuteReaderAsync())
@@ -192,9 +194,86 @@ namespace DocuVault
                         });
                     }
                 }
-                return clients;
+            });
+
+            return clients;
+        }
+
+        public async Task<bool> UpdateUsernameAsync(int userId, string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                throw new ArgumentException("Username cannot be null or empty.", nameof(username));
+
+            // Assuming there's a column 'UserId' to identify the user.
+            string query = "UPDATE Users SET Username = ? WHERE UserId = ?";  // Update the Username for the logged-in user
+
+            var parameters = new[]
+            {
+        new OleDbParameter("?", username),  // Username parameter
+        new OleDbParameter("?", userId)     // UserId parameter
+    };
+
+            try
+            {
+                int rowsAffected = await _accessDB.ExecuteNonQueryAsync(query, parameters);
+                return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                // Log or handle the exception as needed
+                throw new Exception("Error updating username in the database.", ex);
+            }
+        }
+
+
+        public async Task<string> GetUsernameAsync(string email)
+        {
+            string query = "SELECT Username FROM Users WHERE Email = @Email";  // Select only Username
+
+            return await _accessDB.ExecuteAsync(async connection =>
+            {
+                using (var command = new OleDbCommand(query, connection))
+                {
+                    command.Parameters.Add(new OleDbParameter("@Email", email));  // Add Email parameter
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            return reader.GetString(reader.GetOrdinal("Username"));
+                        }
+                        else
+                        {
+                            throw new Exception("User not found.");
+                        }
+                    }
+                }
             });
         }
 
+
+        public async Task<int> GetLoggedInUserIdAsync(string email)
+        {
+            string query = "SELECT UserID FROM Users WHERE Email = @Email";  // Only select UserID
+
+            return await _accessDB.ExecuteAsync(async connection =>
+            {
+                using (var command = new OleDbCommand(query, connection))
+                {
+                    command.Parameters.Add(new OleDbParameter("@Email", email));  // Add Email parameter
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            return reader.GetInt32(reader.GetOrdinal("UserID"));  // Retrieve and return UserID
+                        }
+                        else
+                        {
+                            throw new Exception("User not found.");
+                        }
+                    }
+                }
+            });
+        }
     }
 }

@@ -1,11 +1,14 @@
-﻿using System;
+﻿using DocuVault.Data;
+using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Threading.Tasks;
 
 namespace DocuVault
 {
     public partial class DashboardPage : Page
     {
+        private readonly UserService _userService;
         private int _userId;
         private string _email;
         private bool _isAdmin;
@@ -16,6 +19,15 @@ namespace DocuVault
             _userId = userId;
             _email = email;
             _isAdmin = isAdmin;
+
+            // Initialize AccessDB (No parameters needed in constructor)
+            AccessDB accessDB = new AccessDB();  // Create an instance of AccessDB
+
+            // Pass AccessDB to the UserService constructor
+            _userService = new UserService(accessDB);
+
+            // Initialize async
+            InitializeAsync();
 
             Dashboard.Content = new HomePage();  // Set default content to HomePage
 
@@ -34,10 +46,25 @@ namespace DocuVault
             }
         }
 
+        // Asynchronous method to initialize data
+        private async void InitializeAsync()
+        {
+            try
+            {
+                string username = await _userService.GetUsernameAsync(_email);
+                UserEmailLabel.Content = username;
+            }
+            catch (Exception ex)
+            {
+                // Handle any errors here
+                MessageBox.Show($"Error fetching username: {ex.Message}");
+            }
+        }
+
         private void AvatarButton_Click(object sender, RoutedEventArgs e)
         {
             // Navigate to ProfilePage
-            Dashboard.Navigate(new ProfilePage());
+            Dashboard.Navigate(new ProfilePage(_email));
         }
 
         private void Button_Home_Click(object sender, RoutedEventArgs e)

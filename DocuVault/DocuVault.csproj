@@ -251,6 +251,8 @@
     <Resource Include="Icons\us.png" />
     <Resource Include="Icons\users.png" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Resource Include="Icons\name.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

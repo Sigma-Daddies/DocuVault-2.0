@@ -40,22 +40,23 @@ namespace DocuVault.Services
             // Send the email asynchronously
             var response = await client.SendEmailAsync(msg);
 
-            // Optionally interact with AccessDB (placeholder for database logic)
+            // Log email sending status in the database
             var db = new AccessDB();
             try
             {
-                await db.ExecuteAsync(async connection =>
+                string status = response.StatusCode == System.Net.HttpStatusCode.OK ||
+                                response.StatusCode == System.Net.HttpStatusCode.Accepted ? "Sent" : "Failed";
+
+                string query = "INSERT INTO EmailLogs (RecipientEmail, Subject, SentDate, Status) VALUES (?, ?, ?, ?)";
+                var parameters = new[]
                 {
-                    var query = "INSERT INTO EmailLogs (RecipientEmail, Subject, SentDate, Status) VALUES (?, ?, ?, ?)";
-                    using (var command = new OleDbCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("?", toEmail);
-                        command.Parameters.AddWithValue("?", subject);
-                        command.Parameters.AddWithValue("?", DateTime.Now);
-                        command.Parameters.AddWithValue("?", "Sent"); // Or other statuses
-                        await command.ExecuteNonQueryAsync();
-                    }
-                });
+                    new OleDbParameter("?", toEmail),
+                    new OleDbParameter("?", subject),
+                    new OleDbParameter("?", DateTime.Now),
+                    new OleDbParameter("?", status)
+                };
+
+                await db.ExecuteNonQueryAsync(query, parameters);
             }
             catch (Exception ex)
             {
