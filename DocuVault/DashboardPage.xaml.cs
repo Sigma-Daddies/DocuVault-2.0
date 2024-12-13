@@ -21,7 +21,7 @@ namespace DocuVault
             _isAdmin = isAdmin;
 
             // Initialize AccessDB (No parameters needed in constructor)
-            AccessDB accessDB = new AccessDB();  // Create an instance of AccessDB
+            AccessDB accessDB = new AccessDB(); // Create an instance of AccessDB
 
             // Pass AccessDB to the UserService constructor
             _userService = new UserService(accessDB);
@@ -29,22 +29,25 @@ namespace DocuVault
             // Initialize async
             InitializeAsync();
 
-            Dashboard.Content = new HomePage();  // Set default content to HomePage
+            Dashboard.Content = new HomePage(); // Set default content to HomePage
 
-            // Show or hide buttons based on user role
+            // Show or hide buttons and labels based on user role
             if (_isAdmin)
             {
-                // Show the admin-related buttons (Audit and User Management)
+                // Show admin-related controls
                 Button_Audit.Visibility = Visibility.Visible;
                 Button_Users.Visibility = Visibility.Visible;
+                AdminLabelPanel.Visibility = Visibility.Visible; // Show the admin label
             }
             else
             {
-                // Hide the admin-related buttons
+                // Hide admin-related controls
                 Button_Audit.Visibility = Visibility.Collapsed;
                 Button_Users.Visibility = Visibility.Collapsed;
+                AdminLabelPanel.Visibility = Visibility.Collapsed; // Hide the admin label
             }
         }
+
 
         // Asynchronous method to initialize data
         private async void InitializeAsync()
@@ -52,7 +55,7 @@ namespace DocuVault
             try
             {
                 string username = await _userService.GetUsernameAsync(_email);
-                UserEmailLabel.Content = username;
+                UserEmailLabel.Content = $"Welcome, {username}";
             }
             catch (Exception ex)
             {

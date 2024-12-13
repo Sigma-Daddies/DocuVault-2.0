@@ -3,12 +3,14 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using DocuVault.Data;
+using DocuVault.Utils;
 
 namespace DocuVault
 {
     public partial class RegisterPage : Page
     {
         private readonly UserService _userService;
+        private readonly ToastNotifier _toastNotifier;
 
         public RegisterPage()
         {
@@ -16,6 +18,8 @@ namespace DocuVault
 
             // Instantiate AccessDB without the connection string
             _userService = new UserService(new AccessDB()); // Initialize AccessDB instance without passing connection string
+            _toastNotifier = new ToastNotifier(ToasterPanel);
+
         }
 
         private void TextBox_Email_TextChanged(object sender, TextChangedEventArgs e)
@@ -35,12 +39,12 @@ namespace DocuVault
 
                 if (isRegistered)
                 {
-                    MessageBox.Show("Registration successful!");
+                    await _toastNotifier.ShowToastConfirm("Registration successful!");
                     this.NavigationService.Navigate(new LoginPage());
                 }
                 else
                 {
-                    MessageBox.Show("Registration failed. Please try again.");
+                    await _toastNotifier.ShowToastWarning("Registration failed. Please try again.");
                 }
             }
             catch (Exception ex)

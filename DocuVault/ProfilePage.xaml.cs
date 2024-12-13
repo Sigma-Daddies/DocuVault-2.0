@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using DocuVault.Data;  // Assuming AccessDB is in this namespace
 using DocuVault.Services;  // Assuming UserService is in this namespace
+using DocuVault.Utils;
 
 namespace DocuVault
 {
@@ -13,6 +14,7 @@ namespace DocuVault
     {
         private readonly UserService _userService;
         private readonly string _email;  // User's email
+        private readonly ToastNotifier _toastNotifier;
 
         public ProfilePage(string email)
         {
@@ -25,6 +27,7 @@ namespace DocuVault
 
             // Pass AccessDB to the UserService constructor
             _userService = new UserService(accessDB);
+            _toastNotifier = new ToastNotifier(ToasterPanel);
         }
 
         private async void Btn_ApplyName_Click(object sender, RoutedEventArgs e)
@@ -38,11 +41,11 @@ namespace DocuVault
 
                 if (result)
                 {
-                    MessageBox.Show("Name updated successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    await _toastNotifier.ShowToastConfirm("Name updated successfully!");
                 }
                 else
                 {
-                    MessageBox.Show("Failed to update name.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    await _toastNotifier.ShowToastWarning("Failed to update name.");
                 }
             }
             catch (Exception ex)
@@ -58,7 +61,7 @@ namespace DocuVault
 
             if (newPassword != confirmNewPassword)
             {
-                MessageBox.Show("Passwords do not match. Please try again.");
+                await _toastNotifier.ShowToastWarning("Passwords do not match. Please try again.");
                 return;
             }
 
@@ -67,16 +70,16 @@ namespace DocuVault
             {
                 if (await _userService.ResetPasswordAsync(_email, newPassword))
                 {
-                    MessageBox.Show("Password reset successfully.");
+                    await _toastNotifier.ShowToastConfirm("Password reset successfully.");
                 }
                 else
                 {
-                    MessageBox.Show("Failed to reset password. Please try again.");
+                    await _toastNotifier.ShowToastWarning("Failed to reset password. Please try again.");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error resetting password: {ex.Message}");
+                await _toastNotifier.ShowToastWarning($"Error resetting password: {ex.Message}");
             }
         }
     

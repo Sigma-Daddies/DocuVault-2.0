@@ -105,7 +105,7 @@
             </Grid>
 
         </Grid>
-
+        <StackPanel x:Name="ToasterPanel" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="20" Width="300" />
 
 
 
@@ -199,7 +199,7 @@
                     </TextBlock.Style>
                 </TextBlock>
             </Label>
-
+    
         </Grid>
 
 

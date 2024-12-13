@@ -9,6 +9,7 @@
 
     <Grid>
         <Grid HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,248,0,0" Width="500">
+            
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -18,6 +19,8 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
+            
+            
 
             <!-- Email Label and TextBox with Icon -->
             <Label Content="                          Name" Grid.Row="0" FontFamily="pack://application:,,,/Fonts/#Plus Jakarta Sans SemiBold" FontSize="14"/>
@@ -93,6 +96,8 @@
 
         </Grid>
 
+        
+        
         <Button x:Name="Btn_ChangePassword" Content="Change Password" HorizontalAlignment="Center" Margin="0,585,0,0" VerticalAlignment="Top" Width="200" Height="36"
                 FontFamily="pack://application:,,,/Fonts/#Plus Jakarta Sans Bold" Foreground="#FFFFFF" Background="#20354E" BorderBrush="#20354E" Click="Btn_ChangePassword_Click">
             <Button.Template>
@@ -180,5 +185,8 @@
                 </ControlTemplate>
             </Button.Template>
         </Button>
+        <StackPanel x:Name="ToasterPanel" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="20" Width="300" />
     </Grid>
+    
+    
 </Page>

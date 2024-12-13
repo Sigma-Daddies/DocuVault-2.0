@@ -7,6 +7,8 @@
       Background="White" Title="Manage Files">
 
     <Grid>
+
+        
         <!-- Define Rows and Columns for layout -->
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
@@ -19,6 +21,7 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
+        <StackPanel x:Name="ToasterPanel" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="20" Width="300" />
         <!-- DataGrid -->
         <DataGrid x:Name="Documents_DataGrid" Grid.Row="0" Margin="40,90,40,95" Grid.RowSpan="2" />
 
