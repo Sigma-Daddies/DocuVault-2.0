@@ -46,10 +46,22 @@
         <!-- Sidebar -->
         <StackPanel Grid.Column="0" Background="#20354E" VerticalAlignment="Stretch">
             <!-- Empty container space at the top -->
-            <Border Height="150" Background="#20354E" />
-            <Label x:Name="UserEmailLabel" Content="{Binding}" Foreground="White" FontSize="18" HorizontalAlignment="Center" Margin="0,10,0,10"/>
+            <Border Height="150" Background="#20354E">
+                <Label 
+        x:Name="UserEmailLabel" 
+        Content="{Binding}" 
+        Foreground="White" 
+        FontSize="24" 
+        HorizontalAlignment="Center" 
+        VerticalAlignment="Center" 
+        Margin="0" 
+        Width="Auto" 
+        HorizontalContentAlignment="Center"
+        VerticalContentAlignment="Center"/>
+            </Border>
 
             <Border Height="1" Background="White" Margin="0,0,0,10"/>
+
 
             <!-- Buttons with images in a vertical stack -->
             <Button x:Name="Button_Home" Style="{StaticResource SidebarButtonStyle}" Click="Button_Home_Click">
@@ -72,11 +84,12 @@
                 </StackPanel>
             </Button>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="0">
+            <StackPanel x:Name="AdminLabelPanel" Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="0">
                 <Line X1="0" X2="93" Stretch="Fill" Stroke="White" StrokeThickness="1" VerticalAlignment="Center"/>
                 <TextBlock Text="ADMIN" Foreground="White" Margin="10,0,10,10" FontWeight="Bold"/>
                 <Line X1="0" X2="100" Stretch="Fill" Stroke="White" StrokeThickness="1" VerticalAlignment="Center"/>
             </StackPanel>
+
 
             <Button x:Name="Button_Audit" Style="{StaticResource SidebarButtonStyle}" Click="Button_Audit_Click">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0, 0, 60, 0">

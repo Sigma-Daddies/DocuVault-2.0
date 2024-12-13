@@ -8,6 +8,7 @@ using DocuVault.Services;
 using DocuVault.Models;
 using DocuVault.Data;
 using System.Configuration; // For reading from App.config
+using DocuVault.Utils;
 
 namespace DocuVault
 {
@@ -16,9 +17,11 @@ namespace DocuVault
         private int _userId;
         private string _email;
         private bool _isAdmin;
+        private readonly ToastNotifier _toastNotifier;
         private DocumentService _documentService;
         private AuditService _auditService;
         private AccessDB _accessDB;
+
 
         private ObservableCollection<Document> _documents;
 
@@ -37,9 +40,11 @@ namespace DocuVault
             _documentService = new DocumentService(storagePath);
 
             LoadDocuments(); // Load documents for the user
+
+            _toastNotifier = new ToastNotifier(ToasterPanel);
         }
 
-        private void UploadButton_Click(object sender, RoutedEventArgs e)
+        private async void UploadButton_Click(object sender, RoutedEventArgs e)
         {
             // Open file dialog to select a file
             OpenFileDialog openFileDialog = new OpenFileDialog
@@ -52,13 +57,11 @@ namespace DocuVault
                 string selectedFilePath = openFileDialog.FileName;
                 string fileName = Path.GetFileName(selectedFilePath);
 
-                MessageBox.Show("Selected file: " + selectedFilePath);  // Debugging line
-
                 try
                 {
                     // Call the synchronous UploadDocument method from DocumentService
                     _documentService.UploadDocument(_userId, fileName, selectedFilePath);
-                    MessageBox.Show("Document uploaded successfully.");
+                    await _toastNotifier.ShowToastConfirm("Document uploaded successfully.");
 
                     // Reload the document list
                     LoadDocuments();
@@ -66,12 +69,12 @@ namespace DocuVault
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"An error occurred while uploading the document: {ex.Message}");
+                    await _toastNotifier.ShowToastWarning($"An error occurred while uploading the document: {ex.Message}");
                 }
             }
         }
 
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+        private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (Documents_DataGrid.SelectedItem != null)
             {
@@ -80,23 +83,23 @@ namespace DocuVault
                 {
                     // Call the DeleteDocument method from DocumentService
                     _documentService.DeleteDocument(_userId, selectedDocument.DocumentId);
-                    MessageBox.Show("Document deleted successfully.");
+                    await _toastNotifier.ShowToastConfirm("Document deleted successfully.");
 
                     // Reload the document list
                     LoadDocuments();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"An error occurred while deleting the document: {ex.Message}");
+                    await _toastNotifier.ShowToastWarning($"An error occurred while deleting the document: {ex.Message}");
                 }
             }
             else
             {
-                MessageBox.Show("Please select a document to delete.");
+                await _toastNotifier.ShowToastWarning("Please select a document to delete.");
             }
         }
 
-        private void DownloadButton_Click(object sender, RoutedEventArgs e)
+        private async void DownloadButton_Click(object sender, RoutedEventArgs e)
         {
             if (Documents_DataGrid.SelectedItem != null)
             {
@@ -115,17 +118,17 @@ namespace DocuVault
                     {
                         // Call the synchronous DownloadDocument method from DocumentService
                         _documentService.DownloadDocument(_userId, selectedDocument, Path.GetDirectoryName(destinationPath));
-                        MessageBox.Show("Document downloaded successfully.");
+                        await _toastNotifier.ShowToastConfirm("Document downloaded successfully.");
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"An error occurred while downloading the document: {ex.Message}");
+                        await _toastNotifier.ShowToastWarning($"An error occurred while downloading the document: {ex.Message}");
                     }
                 }
             }
             else
             {
-                MessageBox.Show("Please select a document to download.");
+                await _toastNotifier.ShowToastWarning("Please select a document to download.");
             }
         }
 

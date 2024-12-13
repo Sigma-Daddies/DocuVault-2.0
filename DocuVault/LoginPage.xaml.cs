@@ -4,12 +4,14 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using DocuVault.Data;
+using DocuVault.Utils;
 
 namespace DocuVault
 {
     public partial class LoginPage : Page
     {
         private readonly UserService _userService;
+        private readonly ToastNotifier _toastNotifier;
         private bool isPasswordVisible = false;
         private string _password; // Store the password here
         private bool _isSyncingPassword = false; // Flag to prevent recursive updates
@@ -19,6 +21,8 @@ namespace DocuVault
             InitializeComponent();
             var accessDB = new AccessDB(); // Initialize AccessDB
             _userService = new UserService(accessDB); // Initialize UserService
+
+            _toastNotifier = new ToastNotifier(ToasterPanel);
         }
 
         private async void Btn_SignIn_Click(object sender, RoutedEventArgs e)
@@ -28,11 +32,9 @@ namespace DocuVault
 
             try
             {
-                // Use LoginAsync instead of Login
-                bool isLoggedIn = await _userService.LoginAsync(email, password); // Update to LoginAsync
+                bool isLoggedIn = await _userService.LoginAsync(email, password);
                 if (isLoggedIn)
                 {
-                    // Navigate to DashboardPage and pass logged-in user details
                     int userId = _userService.UserID;
                     string userEmail = _userService.Email;
                     bool isAdmin = _userService.IsAdministrator;
@@ -41,18 +43,16 @@ namespace DocuVault
                 }
                 else
                 {
-                    MessageBox.Show("Invalid login credentials", "Login Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    await _toastNotifier.ShowToastWarning("Invalid login credentials");
                 }
             }
             catch (UnauthorizedAccessException ex)
             {
-                // Show message when account is locked
-                MessageBox.Show(ex.Message, "Login Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                await _toastNotifier.ShowToastWarning(ex.Message, "#FFF57C00");
             }
             catch (Exception ex)
             {
-                // Handle any other unexpected errors
-                MessageBox.Show("An unexpected error occurred: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                await _toastNotifier.ShowToastWarning("An unexpected error occurred: " + ex.Message, "#FFD32F2F");
             }
         }
 

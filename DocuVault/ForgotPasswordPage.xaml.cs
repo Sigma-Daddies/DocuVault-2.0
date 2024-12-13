@@ -3,6 +3,7 @@ using DocuVault.Services;
 using System.Windows.Controls;
 using System.Windows;
 using System;
+using DocuVault.Utils;
 
 namespace DocuVault
 {
@@ -10,6 +11,7 @@ namespace DocuVault
     {
         private readonly EmailService _emailService;
         private readonly UserService _userService;
+        private readonly ToastNotifier _toastNotifier;
         private string _verificationPin; // The verification PIN
         private DateTime _pinGeneratedTime; // The time the PIN was generated
         private readonly TimeSpan _pinValidityDuration = TimeSpan.FromMinutes(5);
@@ -22,6 +24,8 @@ namespace DocuVault
             // Initialize UserService with an AccessDB instance
             var accessDB = new AccessDB();
             _userService = new UserService(accessDB);
+
+            _toastNotifier = new ToastNotifier(ToasterPanel);
         }
 
         private string GenerateVerificationPin()
@@ -46,7 +50,7 @@ namespace DocuVault
                     string htmlContent = "<p>Please use the following PIN to reset your password:</p>";
 
                     await _emailService.SendEmailAsync(recipientEmail, "Verification PIN", plainTextContent, htmlContent, _verificationPin);
-                    MessageBox.Show("Verification PIN sent to your email!");
+                    await _toastNotifier.ShowToastConfirm("Verification PIN sent to your email!");
                 }
                 catch (Exception ex)
                 {
@@ -55,7 +59,7 @@ namespace DocuVault
             }
             else
             {
-                MessageBox.Show("Email address is not registered.");
+                await _toastNotifier.ShowToastWarning("Email address is not registered.");
                 TextBox_Email.Clear();
             }
         }
@@ -64,14 +68,14 @@ namespace DocuVault
         {
             if (DateTime.Now - _pinGeneratedTime > _pinValidityDuration)
             {
-                MessageBox.Show("The PIN has expired. Please request a new one.");
+                await _toastNotifier.ShowToastWarning("The PIN has expired. Please request a new one.");
                 return;
             }
 
             string enteredPin = TextBox_Code.Text.Trim();
             if (enteredPin != _verificationPin)
             {
-                MessageBox.Show("Invalid PIN. Please try again.");
+                await _toastNotifier.ShowToastWarning("Invalid PIN. Please try again.");
                 return;
             }
 
@@ -80,7 +84,7 @@ namespace DocuVault
 
             if (newPassword != confirmNewPassword)
             {
-                MessageBox.Show("Passwords do not match. Please try again.");
+                await _toastNotifier.ShowToastWarning("Passwords do not match. Please try again.");
                 return;
             }
 
@@ -89,12 +93,12 @@ namespace DocuVault
             {
                 if (await _userService.ResetPasswordAsync(userEmail, newPassword))
                 {
-                    MessageBox.Show("Password reset successfully.");
+                    await _toastNotifier.ShowToastConfirm("Password reset successfully.");
                     NavigationService.Navigate(new LoginPage());
                 }
                 else
                 {
-                    MessageBox.Show("Failed to reset password. Please try again.");
+                    await _toastNotifier.ShowToastWarning("Failed to reset password. Please try again.");
                 }
             }
             catch (Exception ex)
