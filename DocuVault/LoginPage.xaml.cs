@@ -4,14 +4,14 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using DocuVault.Data;
-using DocuVault.Utils;
+using DocuVault.Services; // Added namespace for AuditService
 
 namespace DocuVault
 {
     public partial class LoginPage : Page
     {
         private readonly UserService _userService;
-        private readonly ToastNotifier _toastNotifier;
+        private readonly AuditService _auditService; // Added AuditService reference
         private bool isPasswordVisible = false;
         private string _password; // Store the password here
         private bool _isSyncingPassword = false; // Flag to prevent recursive updates
@@ -21,8 +21,7 @@ namespace DocuVault
             InitializeComponent();
             var accessDB = new AccessDB(); // Initialize AccessDB
             _userService = new UserService(accessDB); // Initialize UserService
-
-            _toastNotifier = new ToastNotifier(ToasterPanel);
+            _auditService = new AuditService(accessDB); // Initialize AuditService
         }
 
         private async void Btn_SignIn_Click(object sender, RoutedEventArgs e)
@@ -32,9 +31,14 @@ namespace DocuVault
 
             try
             {
-                bool isLoggedIn = await _userService.LoginAsync(email, password);
+                // Use LoginAsync instead of Login
+                bool isLoggedIn = await _userService.LoginAsync(email, password); // Update to LoginAsync
                 if (isLoggedIn)
                 {
+                    // Log successful login action
+                    await _auditService.LogAuditAsync(_userService.UserID, "User logged in");
+
+                    // Navigate to DashboardPage and pass logged-in user details
                     int userId = _userService.UserID;
                     string userEmail = _userService.Email;
                     bool isAdmin = _userService.IsAdministrator;
@@ -43,16 +47,18 @@ namespace DocuVault
                 }
                 else
                 {
-                    await _toastNotifier.ShowToastWarning("Invalid login credentials");
+                    MessageBox.Show("Invalid login credentials", "Login Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (UnauthorizedAccessException ex)
             {
-                await _toastNotifier.ShowToastWarning(ex.Message, "#FFF57C00");
+                // Show message when account is locked
+                MessageBox.Show(ex.Message, "Login Error", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             catch (Exception ex)
             {
-                await _toastNotifier.ShowToastWarning("An unexpected error occurred: " + ex.Message, "#FFD32F2F");
+                // Handle any other unexpected errors
+                MessageBox.Show("An unexpected error occurred: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

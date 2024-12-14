@@ -17,13 +17,12 @@ namespace DocuVault
         private int _userId;
         private string _email;
         private bool _isAdmin;
-        private readonly ToastNotifier _toastNotifier;
         private DocumentService _documentService;
         private AuditService _auditService;
         private AccessDB _accessDB;
 
-
         private ObservableCollection<Document> _documents;
+        private readonly ToastNotifier _toastNotifier;
 
         public ManagePage(int userId, string email, bool isAdmin)
         {
@@ -38,10 +37,8 @@ namespace DocuVault
             // Initialize DocumentService with storage path
             string storagePath = ConfigurationManager.AppSettings["StoragePath"] ?? @"C:\Documents\Data\";
             _documentService = new DocumentService(storagePath);
-
-            LoadDocuments(); // Load documents for the user
-
             _toastNotifier = new ToastNotifier(ToasterPanel);
+            LoadDocuments(); // Load documents for the user
         }
 
         private async void UploadButton_Click(object sender, RoutedEventArgs e)
@@ -49,14 +46,16 @@ namespace DocuVault
             // Open file dialog to select a file
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
-                Filter = "All Files (*.*)|*.*" // Filter for any type of file
+                Filter = "PDF Files (*.pdf)|*.pdf|Word Documents (*.doc;*.docx)|*.doc;*.docx|PowerPoint Files (*.ppt;*.pptx)|*.ppt;*.pptx|CSV Files (*.csv)|*.csv|Excel Files (*.xls;*.xlsx)|*.xls;*.xlsx|All Files (*.*)|*.*"
             };
+
 
             if (openFileDialog.ShowDialog() == true)
             {
                 string selectedFilePath = openFileDialog.FileName;
                 string fileName = Path.GetFileName(selectedFilePath);
 
+               
                 try
                 {
                     // Call the synchronous UploadDocument method from DocumentService
@@ -90,7 +89,7 @@ namespace DocuVault
                 }
                 catch (Exception ex)
                 {
-                    await _toastNotifier.ShowToastWarning($"An error occurred while deleting the document: {ex.Message}");
+                    Console.WriteLine($"An error occurred while deleting the document: {ex.Message}");
                 }
             }
             else
@@ -122,7 +121,7 @@ namespace DocuVault
                     }
                     catch (Exception ex)
                     {
-                        await _toastNotifier.ShowToastWarning($"An error occurred while downloading the document: {ex.Message}");
+                        Console.WriteLine($"An error occurred while downloading the document: {ex.Message}");
                     }
                 }
             }

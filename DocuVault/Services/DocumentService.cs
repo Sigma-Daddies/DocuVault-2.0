@@ -58,12 +58,13 @@ namespace DocuVault.Services
         // Upload a document
         public async void UploadDocument(int userId, string fileName, string filePath)
         {
-
+            try
+            {
                 // Ensure the storage directory exists
                 if (!Directory.Exists(_storagePath))
                 {
                     Directory.CreateDirectory(_storagePath);
-
+                    MessageBox.Show("Storage path created: " + _storagePath);  // Debugging line
                 }
 
                 string uniqueFileName = Guid.NewGuid() + Path.GetExtension(fileName);
@@ -85,19 +86,40 @@ namespace DocuVault.Services
                         cmd.Parameters.Add("?", OleDbType.VarChar).Value = destinationPath;
                         cmd.Parameters.Add("?", OleDbType.Date).Value = DateTime.Now;
 
+                        try
+                        {
+                            int rowsAffected = cmd.ExecuteNonQuery();
+                            if (rowsAffected > 0)
+                            {
+                                Console.WriteLine("Document successfully inserted into the database."); // Debugging line
+                            }
+                            else
+                            {
+                                MessageBox.Show("Failed to insert document into the database."); // Debugging line
+                            }
+                        }
+                        catch (Exception dbEx)
+                        {
+                            Console.WriteLine($"Database operation failed: {dbEx.Message}");  // Debugging line
+                        }
                     }
                 });
 
                 // Log the audit entry for document upload
                 await _auditService.LogAuditAsync(userId, $"User uploaded file: {fileName}");
 
-
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred during document upload: " + ex.Message);
+            }
         }
 
         // Download a document
         public void DownloadDocument(int userId, Document document, string destinationPath)
         {
-
+            try
+            {
                 if (File.Exists(document.FilePath))
                 {
                     string destinationFilePath = Path.Combine(destinationPath, document.DocumentName);
@@ -116,7 +138,12 @@ namespace DocuVault.Services
 
                 // Log the audit entry for document download
                 _auditService.LogAuditAsync(userId, $"User downloaded file: {document.DocumentName}").Wait();
-
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred during document download: " + ex.Message);
+                throw;
+            }
         }
 
         // Delete a document
@@ -152,7 +179,15 @@ namespace DocuVault.Services
                 });
 
                 // Delete the file from storage
-
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                    Console.WriteLine("File deleted successfully.");
+                }
+                else
+                {
+                    Console.WriteLine($"File not found at {filePath}.");
+                }
 
                 // Delete the record from the database
                 _accessDB.Execute(connection =>
@@ -170,7 +205,7 @@ namespace DocuVault.Services
             }
             catch (Exception ex)
             {
-                MessageBox.Show("An error occurred during document deletion: " + ex.Message);
+                Console.WriteLine("An error occurred during document deletion: " + ex.Message);
             }
         }
     }

@@ -13,7 +13,6 @@ namespace DocuVault
     {
         private readonly AccessDB _accessDB;
 
-        // Properties to store the currently logged-in user's details
         public int UserID { get; private set; }
         public string Email { get; private set; }
         public bool IsAdministrator { get; private set; }
@@ -23,7 +22,6 @@ namespace DocuVault
             _accessDB = accessDB ?? throw new ArgumentNullException(nameof(accessDB));
         }
 
-        // Method to authenticate the user
         public async Task<bool> LoginAsync(string email, string password)
         {
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
@@ -37,7 +35,6 @@ namespace DocuVault
             return false;
         }
 
-        // Authenticate user credentials
         private async Task<bool> IsAuthenticatedAsync(string email, string password)
         {
             string query = "SELECT COUNT(*) FROM Users WHERE Email = @Email AND Password = @Password AND IsLocked = False";
@@ -48,7 +45,6 @@ namespace DocuVault
                 new OleDbParameter("@Password", hashedPassword)) > 0;
         }
 
-        // Fetch the currently logged-in user's details
         private async Task GetLoggedInUserDetailsAsync(string email)
         {
             string query = "SELECT UserID, Email, IsAdmin FROM Users WHERE Email = @Email";
@@ -74,7 +70,6 @@ namespace DocuVault
             });
         }
 
-        // Register a new user
         public async Task<bool> RegisterUserAsync(string email, string password, string confirmPassword)
         {
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || password != confirmPassword)
@@ -94,14 +89,12 @@ namespace DocuVault
                 new OleDbParameter("?", false)) > 0;
         }
 
-        // Utility method to hash a password
         private string HashPassword(string password)
         {
             using (SHA256 sha256 = SHA256.Create())
                 return Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
         }
 
-        // Get all non-admin users
         public async Task<List<Client>> GetAllNonAdminUsersAsync()
         {
             string query = "SELECT UserID, Email, IsLocked FROM Users WHERE IsAdmin = False";
@@ -127,28 +120,24 @@ namespace DocuVault
             return clients;
         }
 
-        // Lock a user account
         public async Task LockUserAccountAsync(int userID)
         {
             string query = "UPDATE Users SET IsLocked = True WHERE UserID = ?";
             await _accessDB.ExecuteNonQueryAsync(query, new OleDbParameter("?", userID));
         }
 
-        // Unlock a user account
         public async Task UnlockUserAccountAsync(int userID)
         {
             string query = "UPDATE Users SET IsLocked = False WHERE UserID = ?";
             await _accessDB.ExecuteNonQueryAsync(query, new OleDbParameter("?", userID));
         }
 
-        // Check if email is registered
         public async Task<bool> IsEmailRegisteredAsync(string email)
         {
             string query = "SELECT COUNT(*) FROM Users WHERE Email = @Email";
             return await _accessDB.ExecuteScalarAsync<int>(query, new OleDbParameter("@Email", email)) > 0;
         }
 
-        // Reset user password
         public async Task<bool> ResetPasswordAsync(string email, string newPassword)
         {
             string query = "UPDATE Users SET [Password] = @NewPasswordHash WHERE [Email] = @Email";
@@ -163,7 +152,6 @@ namespace DocuVault
             return true;
         }
 
-        // Log user actions for the audit trail
         public async Task LogUserActionAsync(int userID, string action)
         {
             string query = "INSERT INTO Audit (UserId, [Action], [Timestamp]) VALUES (?, ?, ?)";
@@ -173,7 +161,6 @@ namespace DocuVault
                 new OleDbParameter("?", DateTime.Now));
         }
 
-        // Get all users including admins
         public async Task<List<Client>> GetAllUsersIncludingAdminsAsync()
         {
             string query = "SELECT UserID, Email, IsLocked FROM Users";
@@ -204,37 +191,31 @@ namespace DocuVault
             if (string.IsNullOrWhiteSpace(username))
                 throw new ArgumentException("Username cannot be null or empty.", nameof(username));
 
-            // Assuming there's a column 'UserId' to identify the user.
-            string query = "UPDATE Users SET Username = ? WHERE UserId = ?";  // Update the Username for the logged-in user
-
-            var parameters = new[]
-            {
-        new OleDbParameter("?", username),  // Username parameter
-        new OleDbParameter("?", userId)     // UserId parameter
-    };
+            string query = "UPDATE Users SET Username = ? WHERE UserId = ?";
 
             try
             {
-                int rowsAffected = await _accessDB.ExecuteNonQueryAsync(query, parameters);
+                int rowsAffected = await _accessDB.ExecuteNonQueryAsync(query,
+                    new OleDbParameter("?", username),
+                    new OleDbParameter("?", userId));
+
                 return rowsAffected > 0;
             }
             catch (Exception ex)
             {
-                // Log or handle the exception as needed
                 throw new Exception("Error updating username in the database.", ex);
             }
         }
 
-
         public async Task<string> GetUsernameAsync(string email)
         {
-            string query = "SELECT Username FROM Users WHERE Email = @Email";  // Select only Username
+            string query = "SELECT Username FROM Users WHERE Email = @Email";
 
             return await _accessDB.ExecuteAsync(async connection =>
             {
                 using (var command = new OleDbCommand(query, connection))
                 {
-                    command.Parameters.Add(new OleDbParameter("@Email", email));  // Add Email parameter
+                    command.Parameters.Add(new OleDbParameter("@Email", email));
 
                     using (var reader = await command.ExecuteReaderAsync())
                     {
@@ -251,21 +232,20 @@ namespace DocuVault
             });
         }
 
-
         public async Task<int> GetLoggedInUserIdAsync(string email)
         {
-            string query = "SELECT UserID FROM Users WHERE Email = @Email";  // Only select UserID
+            string query = "SELECT UserID FROM Users WHERE Email = @Email";
 
             return await _accessDB.ExecuteAsync(async connection =>
             {
                 using (var command = new OleDbCommand(query, connection))
                 {
-                    command.Parameters.Add(new OleDbParameter("@Email", email));  // Add Email parameter
+                    command.Parameters.Add(new OleDbParameter("@Email", email));
                     using (var reader = await command.ExecuteReaderAsync())
                     {
                         if (await reader.ReadAsync())
                         {
-                            return reader.GetInt32(reader.GetOrdinal("UserID"));  // Retrieve and return UserID
+                            return reader.GetInt32(reader.GetOrdinal("UserID"));
                         }
                         else
                         {
