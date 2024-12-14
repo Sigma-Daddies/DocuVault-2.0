@@ -1,4 +1,5 @@
 ﻿using DocuVault.Data;
+using DocuVault.Services; // Added namespace for AuditService
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,6 +10,7 @@ namespace DocuVault
     public partial class DashboardPage : Page
     {
         private readonly UserService _userService;
+        private readonly AuditService _auditService; // Added AuditService reference
         private int _userId;
         private string _email;
         private bool _isAdmin;
@@ -20,11 +22,12 @@ namespace DocuVault
             _email = email;
             _isAdmin = isAdmin;
 
-            // Initialize AccessDB (No parameters needed in constructor)
-            AccessDB accessDB = new AccessDB(); // Create an instance of AccessDB
+            // Initialize AccessDB
+            AccessDB accessDB = new AccessDB();
 
-            // Pass AccessDB to the UserService constructor
+            // Pass AccessDB to the constructors of UserService and AuditService
             _userService = new UserService(accessDB);
+            _auditService = new AuditService(accessDB); // Initialize AuditService
 
             // Initialize async
             InitializeAsync();
@@ -47,6 +50,7 @@ namespace DocuVault
                 AdminLabelPanel.Visibility = Visibility.Collapsed; // Hide the admin label
             }
         }
+
 
 
         // Asynchronous method to initialize data
@@ -94,10 +98,21 @@ namespace DocuVault
             Dashboard.Navigate(new UsersPage(_isAdmin));
         }
 
-        private void Button_Logout_Click_1(object sender, RoutedEventArgs e)
+        private async void Button_Logout_Click_1(object sender, RoutedEventArgs e)
         {
-            // Log out and navigate back to LoginPage
-            this.NavigationService.Navigate(new LoginPage());
+            try
+            {
+                // Log the logout action before navigating to LoginPage
+                await _auditService.LogAuditAsync(_userId, "User logged out");
+
+                // Log out and navigate back to LoginPage
+                this.NavigationService.Navigate(new LoginPage());
+            }
+            catch (Exception ex)
+            {
+                // Handle any errors while logging the logout action
+                MessageBox.Show($"Error logging logout action: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }
